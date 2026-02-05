@@ -1,0 +1,47 @@
+# Installation de n8n avec Docker
+
+Ce guide décrit les étapes d’installation et d’exécution de **n8n** à l’aide de **Docker**.  
+La configuration est compatible avec **macOS, Linux et Windows (via Docker Desktop ).
+
+---
+
+## Prérequis
+- Docker Desktop installé et lancé
+
+---
+
+## 1) Ouvrir Docker
+Assurez-vous que **Docker Desktop** est bien démarré.
+
+---
+
+## 2)Créer le volume Docker
+Cette étape permet de conserver les workflows même après l’arrêt du conteneur.(dans le terminal de docker)
+
+```bash
+docker volume create n8n_data
+
+## 3)Lancer n8n avec Docker (exécution en arrière-plan)
+
+docker run -d \
+--name n8n \
+-p 5678:5678 \
+-e GENERIC_TIMEZONE="Africa/Tunis" \
+-e TZ="Africa/Tunis" \
+-e N8N_SECURE_COOKIE=false \
+-v n8n_data:/home/node/.n8n \
+docker.n8n.io/n8nio/n8n
+
+## 4)Gestion du conteneur
+-A fin de démarrer le conteneur existant
+docker start n8n
+-Vérifier que le conteneur est en cours d’exécution
+docker ps
+
+##5)Accéder à l’interface n8n
+-En vrai après la création et l’écriture du pipeline un hypertexte apparaît juste cliquer ci-dessus, 
+Sinon ouvrir le navigateur et accéder à  http://localhost:5678 
+
+
+
+
