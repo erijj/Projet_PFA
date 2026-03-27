@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartCert — Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- ========== SIDEBAR ========== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🔗</div>
+      <span class="logo-text">SmartCert</span>
+      <span class="logo-badge">BETA</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Principal</div>
+      <a class="nav-item active" onclick="showPage('dashboard')">
+        <span class="nav-icon">📊</span> Dashboard
+      </a>
+      <a class="nav-item" onclick="showPage('certificates')">
+        <span class="nav-icon">📜</span> Certificats
+        <span class="nav-badge" id="cert-count-badge">—</span>
+      </a>
+      <a class="nav-item" onclick="showPage('issue')">
+        <span class="nav-icon">➕</span> Émettre
+      </a>
+      <a class="nav-item" onclick="showPage('verify')">
+        <span class="nav-icon">🔍</span> Vérifier
+      </a>
+
+      <div class="nav-section-title" style="margin-top:16px">Système</div>
+      <a class="nav-item" onclick="showPage('blockchain')">
+        <span class="nav-icon">⛓️</span> Blockchain
+      </a>
+      <a class="nav-item" onclick="showPage('settings')">
+        <span class="nav-icon">⚙️</span> Paramètres
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar">A</div>
+        <div class="user-info">
+          <div class="user-name">Admin</div>
+          <div class="user-role">Administrateur</div>
+        </div>
+        <span style="color:var(--text-muted);font-size:16px">⋯</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========== MAIN ========== -->
+  <div class="main-content">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-sub">SmartCert — Gestion des certificats</div>
+      </div>
+
+      <div class="topbar-search">
+        <span class="search-icon">🔎</span>
+        <input type="text" id="globalSearch" placeholder="Rechercher un certificat, étudiant…" oninput="handleSearch(this.value)">
+      </div>
+
+      <div class="topbar-actions">
+        <button class="topbar-btn" title="Notifications">
+          🔔
+          <span class="notif-dot"></span>
+        </button>
+        <button class="topbar-btn" title="Actualiser" onclick="loadCertificates()">🔄</button>
+        <button class="btn btn-primary btn-sm" onclick="showPage('issue')">+ Nouveau</button>
+      </div>
+    </header>
+
+    <!-- ========== PAGE: DASHBOARD ========== -->
+    <div class="page-content fade-in" id="page-dashboard">
+
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>📊 Dashboard</h1>
+          <p>Vue d'ensemble de la plateforme SmartCert</p>
+        </div>
+        <div class="blockchain-status">
+          <span class="status-dot"></span>
+          <span id="chain-status-text">Connexion blockchain…</span>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card blue">
+          <div class="stat-header">
+            <div class="stat-label">Total Certificats</div>
+            <div class="stat-icon blue">📜</div>
+          </div>
+          <div class="stat-value" id="stat-total">—</div>
+          <div class="stat-trend up">↑ Mis à jour</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-header">
+            <div class="stat-label">Vérifiés</div>
+            <div class="stat-icon green">✅</div>
+          </div>
+          <div class="stat-value" id="stat-verified">—</div>
+          <div class="stat-trend up" id="stat-verified-pct">—</div>
+        </div>
+        <div class="stat-card gold">
+          <div class="stat-header">
+            <div class="stat-label">En attente</div>
+            <div class="stat-icon gold">⏳</div>
+          </div>
+          <div class="stat-value" id="stat-pending">—</div>
+          <div class="stat-trend" style="color:var(--accent-gold)">À traiter</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-header">
+            <div class="stat-label">Révoqués</div>
+            <div class="stat-icon red">🚫</div>
+          </div>
+          <div class="stat-value" id="stat-revoked">—</div>
+          <div class="stat-trend down">Invalides</div>
+        </div>
+      </div>
+
+      <!-- RECENT TABLE -->
+      <div class="section-header">
+        <div class="section-title">Certificats récents</div>
+        <button class="btn btn-ghost btn-sm" onclick="showPage('certificates')">Voir tout →</button>
+      </div>
+
+      <div class="table-card fade-in">
+        <table>
+          <thead>
+            <tr>
+              <th>ID Certificat</th>
+              <th>Bénéficiaire</th>
+              <th>Programme</th>
+              <th>Statut</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="recentTable">
+            <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: CERTIFICATS ========== -->
+    <div class="page-content fade-in" id="page-certificates" style="display:none">
+
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>📜 Gestion des Certificats</h1>
+          <p>Afficher, prévisualiser et gérer tous les certificats</p>
+        </div>
+        <button class="btn btn-primary" onclick="showPage('issue')">+ Émettre un certificat</button>
+      </div>
+
+      <div class="table-card fade-in">
+        <div class="table-toolbar">
+          <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterTable('all', this)">Tous</button>
+            <button class="filter-tab" onclick="filterTable('Vérifié', this)">Vérifiés</button>
+            <button class="filter-tab" onclick="filterTable('En attente', this)">En attente</button>
+            <button class="filter-tab" onclick="filterTable('Révoqué', this)">Révoqués</button>
+          </div>
+          <div class="table-search">
+            <span class="table-search-icon">🔎</span>
+            <input type="text" id="tableSearch" placeholder="Rechercher…" oninput="filterTableSearch(this.value)">
+          </div>
+          <div class="ml-auto" style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="loadCertificates()">🔄 Actualiser</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
+              <th>ID Certificat</th>
+              <th>Bénéficiaire</th>
+              <th>Programme</th>
+              <th>Statut</th>
+              <th>Date d'émission</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="fullTable">
+            <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted)"><span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+
+        <div class="table-footer">
+          <span id="tableInfo">—</span>
+          <div class="pagination" id="pagination"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: ÉMETTRE ========== -->
+    <div class="page-content fade-in" id="page-issue" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>➕ Émettre un Certificat</h1>
+          <p>Créer et enregistrer un nouveau certificat sur la blockchain</p>
+        </div>
+      </div>
+
+      <div style="max-width:600px">
+        <div class="table-card">
+          <div class="modal-header" style="border-bottom:1px solid var(--border)">
+            <div class="modal-title">Nouveau certificat</div>
+            <div class="blockchain-status" style="font-size:11px">
+              <span class="status-dot"></span> Blockchain prête
+            </div>
+          </div>
+          <div class="modal-body">
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div>
+                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Nom du bénéficiaire *</label>
+                <input type="text" id="f-name" placeholder="ex: Ahmed Ben Ali" style="width:100%;background:rgba(59,130,246,.06);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-family:'Sora',sans-serif;font-size:13px;outline:none;transition:var(--transition)">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Email *</label>
+                <input type="email" id="f-email" placeholder="ex: ahmed@email.com" style="width:100%;background:rgba(59,130,246,.06);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-family:'Sora',sans-serif;font-size:13px;outline:none;transition:var(--transition)">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Programme / Diplôme *</label>
+                <input type="text" id="f-program" placeholder="ex: Licence en Informatique" style="width:100%;background:rgba(59,130,246,.06);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-family:'Sora',sans-serif;font-size:13px;outline:none;transition:var(--transition)">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Institution</label>
+                <input type="text" id="f-institution" placeholder="ex: Université de Tunis" style="width:100%;background:rgba(59,130,246,.06);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-family:'Sora',sans-serif;font-size:13px;outline:none;transition:var(--transition)">
+              </div>
+              <div>
+                <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Date d'émission</label>
+                <input type="date" id="f-date" style="width:100%;background:rgba(59,130,246,.06);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-family:'Sora',sans-serif;font-size:13px;outline:none;color-scheme:dark">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" onclick="clearIssueForm()">Annuler</button>
+            <button class="btn btn-primary" onclick="issueCertificate()" id="issueBtn">
+              🔗 Émettre sur Blockchain
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: VÉRIFIER ========== -->
+    <div class="page-content fade-in" id="page-verify" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>🔍 Vérifier un Certificat</h1>
+          <p>Vérification instantanée via la blockchain</p>
+        </div>
+      </div>
+      <div style="max-width:540px">
+        <div class="table-card">
+          <div class="modal-body">
+            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">ID ou Hash du certificat</label>
+            <div style="display:flex;gap:10px">
+              <input type="text" id="v-id" placeholder="ex: CERT-2024-001 ou 0x…" style="flex:1;background:rgba(59,130,246,.06);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-family:'Space Mono',monospace;font-size:13px;outline:none">
+              <button class="btn btn-primary" onclick="verifyCertificate()">Vérifier</button>
+            </div>
+            <div id="verifyResult" style="margin-top:20px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: BLOCKCHAIN ========== -->
+    <div class="page-content fade-in" id="page-blockchain" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>⛓️ Statut Blockchain</h1>
+          <p>Informations sur la connexion Ethereum Testnet</p>
+        </div>
+      </div>
+      <div style="max-width:600px">
+        <div class="table-card">
+          <div class="modal-body" id="chainInfo">
+            <div style="text-align:center;padding:40px;color:var(--text-muted)"><span class="spinner"></span> Connexion…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== PAGE: SETTINGS ========== -->
+    <div class="page-content fade-in" id="page-settings" style="display:none">
+      <div class="page-header">
+        <div class="page-header-left"><h1>⚙️ Paramètres</h1></div>
+      </div>
+      <div style="max-width:500px">
+        <div class="table-card">
+          <div class="modal-header"><div class="modal-title">Configuration API Backend</div></div>
+          <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+            <div>
+              <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">URL Backend Flask</label>
+              <input type="text" id="s-url" style="width:100%;background:rgba(59,130,246,.06);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-family:'Space Mono',monospace;font-size:12px;outline:none">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary" onclick="saveSettings()">💾 Sauvegarder</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end main-content -->
+</div><!-- end app-layout -->
+
+<!-- ========== MODAL PREVIEW ========== -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">👁 Aperçu du Certificat</div>
+      <button class="modal-close" onclick="closeModal('previewModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="cert-preview" id="certPreviewContent"></div>
+      <div style="margin-top:16px">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Hash Blockchain</div>
+        <div class="cert-hash-display" id="certHashDisplay">—</div>
+      </div>
+      <div class="info-grid" id="certInfoGrid" style="margin-top:16px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('previewModal')">Fermer</button>
+      <button class="btn btn-success btn-sm" onclick="downloadPDF()">⬇ Télécharger PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL DELETE CONFIRM ========== -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title" style="color:var(--accent-red)">⚠ Supprimer le Certificat</div>
+      <button class="modal-close" onclick="closeModal('deleteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px;color:var(--text-secondary)">Cette action est irréversible. Le certificat sera retiré de la base de données.</p>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:8px">Note : L'enregistrement blockchain reste permanent.</p>
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:12px;margin-top:16px;font-family:'Space Mono',monospace;font-size:12px;color:var(--accent-red)" id="deleteCertId">—</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('deleteModal')">Annuler</button>
+      <button class="btn btn-danger" onclick="confirmDelete()" id="confirmDeleteBtn">🗑 Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== TOAST CONTAINER ========== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
