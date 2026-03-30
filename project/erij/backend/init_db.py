@@ -1,35 +1,39 @@
 """
 SmartCert — init_db.py
-Script pour initialiser la base de données SQLite
-et insérer des données de test.
-
-Usage :
-    python init_db.py
+initialiser la base de données SQLite certificates.db
 """
 
 import sqlite3
 import hashlib
 import json
 import os
-from datetime import datetime, timedelta
-import random
 import uuid
+from datetime import datetime
+"""الأصلي — فيه زيادة imports
+from datetime import datetime, timedelta  # timedelta ما تستعملتش
+import random                            # ما تستعملتش 
+"""
 
-DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.db')
 
-# ─── SCHÉMA ───────────────────────────────────────────────
+# المسار — نفس مجلد init_db.py
+
+DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'certificates.db') # غيرت 'database.db' إلى 'certificates.db' لتتوافق مع اسم قاعدة البيانات المستخدمة في المشروع.
+
+
+# SCHEMA — جدولين
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS certificates (
-    id              TEXT PRIMARY KEY,
-    recipient_name  TEXT NOT NULL,
-    email           TEXT NOT NULL,
-    program         TEXT NOT NULL,
-    institution     TEXT DEFAULT 'SmartCert University',
-    issue_date      TEXT NOT NULL,
-    status          TEXT DEFAULT 'Vérifié',
-    blockchain_hash TEXT,
-    tx_hash         TEXT,
-    created_at      TEXT DEFAULT (datetime('now'))
+    id               TEXT PRIMARY KEY,
+    recipient_name   TEXT NOT NULL,
+    email            TEXT NOT NULL,
+    program          TEXT NOT NULL,
+    institution      TEXT DEFAULT 'SmartCert University',
+    issue_date       TEXT NOT NULL,
+    status           TEXT DEFAULT 'En attente',
+    blockchain_hash  TEXT,
+    tx_hash          TEXT,
+    created_at       TEXT DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS audit_log (
@@ -42,8 +46,10 @@ CREATE TABLE IF NOT EXISTS audit_log (
 );
 """
 
-# ─── DONNÉES DE TEST ──────────────────────────────────────
-SAMPLE_CERTS = [
+
+# بيانات تجريبية — تتوافق مع الـ Dashboard
+
+SAMPLE_CERTS = [ #حذفت شهادتين (lina,omar)
     {
         'recipient_name': 'Ahmed Ben Ali',
         'email':          'ahmed.benali@email.tn',
@@ -63,7 +69,7 @@ SAMPLE_CERTS = [
     {
         'recipient_name': 'Mohamed Gharbi',
         'email':          'm.gharbi@email.tn',
-        'program':        'Diplôme d\'Ingénieur en Réseaux',
+        'program':        "Diplôme d'Ingénieur en Réseaux",
         'institution':    'ENIT',
         'issue_date':     '2024-09-01',
         'status':         'En attente',
@@ -84,53 +90,47 @@ SAMPLE_CERTS = [
         'issue_date':     '2024-10-05',
         'status':         'Révoqué',
     },
-    {
-        'recipient_name': 'Lina Bouaziz',
-        'email':          'lina.b@student.tn',
-        'program':        'Licence en Cybersécurité',
-        'institution':    'Université de Carthage',
-        'issue_date':     '2025-01-18',
-        'status':         'Vérifié',
-    },
-    {
-        'recipient_name': 'Omar Slimani',
-        'email':          'o.slimani@mail.tn',
-        'program':        'Formation DevOps & Cloud',
-        'institution':    'ISET Sousse',
-        'issue_date':     '2025-03-01',
-        'status':         'En attente',
-    },
 ]
 
 
-def compute_hash(data: dict) -> str:
-    payload = json.dumps(data, sort_keys=True, ensure_ascii=False)
-    return "0x" + hashlib.sha256(payload.encode()).hexdigest()
+# توليد ID فريد — CERT-2026-XXXXXX
 
-
-def fake_tx_hash(cert_hash: str) -> str:
-    return "0xtx_" + hashlib.md5(cert_hash.encode()).hexdigest()
-
-
-def generate_cert_id(index: int) -> str:
-    year = datetime.now().year
+def generate_cert_id() -> str: #  'index' n'est pas utilisé, peut ètre supprimé .
+    year  = datetime.now().year
     short = str(uuid.uuid4()).upper()[:6]
     return f"CERT-{year}-{short}"
 
 
+# توليد blockchain_hash من بيانات الشهادة
+
+def compute_blockchain_hash(data: dict) -> str: # le nom de la fonction est changé de 'compute_hash' en 'compute_blockchain_hash' pour être plus explicite et éviter toute confusion avec d'autres types de hash qui pourraient être utilisés dans le projet.
+    payload = json.dumps(data, sort_keys=True, ensure_ascii=False)
+    return "0x" + hashlib.sha256(payload.encode()).hexdigest()
+
+
+# توليد tx_hash وهمي (قبل ربط Ethereum حقيقي)
+
+def fake_tx_hash(blockchain_hash: str) -> str:
+    return "0xtx_" + hashlib.md5(blockchain_hash.encode()).hexdigest()
+
+
+# الفونكسيون الرئيسية
+
 def init_db():
     print(f"📁 Base de données : {DATABASE}")
-    conn = sqlite3.connect(DATABASE)
+    conn   = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
-    # Créer les tables
+    # إنشاء الجدولين
     cursor.executescript(SCHEMA)
-    print("✅ Tables créées")
+    print("✅ Tables créées (certificates + audit_log)")
 
-    # Insérer les données de test
+    # إدخال البيانات التجريبية
     inserted = 0
-    for i, cert in enumerate(SAMPLE_CERTS):
-        cert_id = generate_cert_id(i)
+    for cert in SAMPLE_CERTS:
+        cert_id = generate_cert_id()
+
+        # البيانات اللي يتحسب منها الـ hash
         hash_payload = {
             'id':             cert_id,
             'recipient_name': cert['recipient_name'],
@@ -139,7 +139,8 @@ def init_db():
             'institution':    cert['institution'],
             'issue_date':     cert['issue_date'],
         }
-        blockchain_hash = compute_hash(hash_payload)
+
+        blockchain_hash = compute_blockchain_hash(hash_payload)
         tx_hash         = fake_tx_hash(blockchain_hash)
 
         try:
@@ -161,19 +162,24 @@ def init_db():
             ))
             inserted += 1
             print(f"  ➕ {cert_id} — {cert['recipient_name']} [{cert['status']}]")
+
+            # سجل في audit_log
+            cursor.execute("""
+                INSERT INTO audit_log (action, cert_id, details)
+                VALUES (?, ?, ?)
+            """, ('INIT', cert_id, f"Certificat créé pour {cert['recipient_name']}"))
+            
+            #الكود الاصلي:cursor.execute("""
+    # INSERT INTO audit_log (action, cert_id, details)
+    # VALUES (?, ?, ?)
+# """, ('INIT', cert_id, f"Certificat créé pour {cert['recipient_name']}"))
+
         except Exception as e:
             print(f"  ⚠ Erreur : {e}")
 
-    # Log d'audit initial
-    cursor.execute("""
-        INSERT INTO audit_log (action, cert_id, details)
-        VALUES ('INIT', NULL, 'Base de données initialisée avec données de test')
-    """)
-
     conn.commit()
     conn.close()
-
-    print(f"\n🎉 Terminé : {inserted} certificats insérés dans database.db")
+    print(f"\n🎉 Terminé : {inserted} certificats insérés dans certificates.db")
     print("▶ Lancez le backend : python app.py")
 
 
