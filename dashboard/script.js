@@ -4,7 +4,7 @@
    ============================================================ */
 
 // ─── CONFIG ───────────────────────────────────────────────
-let API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
+let API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5001';
 
 // ─── STATE ────────────────────────────────────────────────
 let allCerts     = [];          // all fetched certificates
