@@ -42,12 +42,12 @@
       text-decoration: none;
     }
     .logo-img {
-  width: 90px;
-  height: 90px;
+  width: 80px;
+  height: 50px;
   object-fit: contain;
   display: block;
   margin: 0 auto 15px;
-  border-radius: 50%; /* rond */
+  /*border-radius: 50%;  rond */
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 

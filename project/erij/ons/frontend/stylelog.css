@@ -73,11 +73,11 @@ h4 {
 }
 .logo-img {
   width: 90px;
-  height: 90px;
+  height: 60px;
   object-fit: contain;
   display: block;
   margin: 0 auto 15px;
-  border-radius: 50%; /* rond */
+  /*border-radius: 50%; /* rond */
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
