@@ -1,4 +1,4 @@
-# Pojet_PFA
+# Projet_PFA
 
 Système sécurisé de gestion et de vérification de certificats basé sur la blockchain
 
