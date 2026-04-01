@@ -86,17 +86,13 @@ body::before {
 }
 
 .logo-icon {
-  width: 27px;
-  height: 25px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: linear-gradient(135deg, var(--accent-blue), var(--accent-light));
-  box-shadow: 0 0 14px rgba(123, 189, 232, 0.4);
-  flex-shrink: 0;
-  transition: transform 0.25s;
+  width: 90px;
+  height: 60px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 15px;
+  /*border-radius: 50%; /* rond */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 .logo-icon:hover { transform: scale(1.06); }
 .logo-icon img { width: 100%; height: 100%; object-fit: contain; }
