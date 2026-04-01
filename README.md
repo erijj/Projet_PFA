@@ -10,7 +10,7 @@ Changements apportés : Suppression de la dépendance aux processus administrati
 
 Idée globale : Création d’une application web intégrant une blockchain (Ethereum Testnet) pour l’émission et la vérification de certificats numériques s ́ecurisés, avec une interface intuitive accessible via navigateur.
 
-Fonctionnalit ́es principales :
+Fonctionnalités principales :
 • Emission de certificats avec identifiant unique et cachet numérique 
 • Vérification en temps réel via un lien de vérification
 • Gestion des certificats via une interface web sécurisée
