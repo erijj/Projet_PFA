@@ -46,12 +46,12 @@
 
     <div class="sidebar-footer">
       <div class="user-card">
-        <div class="user-avatar">A</div>
+        <div class="user-avatar" id="user-avatar">A</div>
         <div class="user-info">
-          <div class="user-name">Admin</div>
-          <div class="user-role">Administrateur</div>
+          <div class="user-name" id="user-name">Admin</div>
+          <div class="user-role" id="user-role">Administrateur</div>
         </div>
-        <span style="color:var(--text-muted);font-size:16px">⋯</span>
+        <button onclick="logout()" title="Déconnexion" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:16px" title="Déconnexion">🚪</button>
       </div>
     </div>
   </aside>
