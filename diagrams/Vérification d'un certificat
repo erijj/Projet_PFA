@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant U as Utilisateur / Vérificateur
+    participant F as Frontend
+    participant B as Backend (Flask)
+    participant D as SQLite DB
+
+    U->>F: Saisit ID ou hash du certificat
+    F->>B: GET /certificates/verify/{id_or_hash}
+    B->>D: SELECT * FROM certificates WHERE id=? OR blockchain_hash=?
+    D-->>B: Résultat
+
+    alt Certificat trouvé
+        B->>D: INSERT INTO audit_logs (action='VERIFY', ...)
+        B-->>F: 200 OK {certificate, status}
+        F->>U: Affiche les détails (nom, programme, statut, hash blockchain)
+    else Non trouvé
+        B-->>F: 404 Not Found
+        F->>U: "Certificat introuvable"
+    end
