@@ -1,12 +1,22 @@
-'use this link to generate the diagram: https://mermaid.ai/app/dashboard or use a local mermaid live editor to visualize the diagram. Make sure to copy the entire code snippet below and paste it into the editor to see the class diagram for the SmartCert System.'
-'classDiagram'
+classDiagram
     class User {
         +String id
         +String email
         +String password_hash
         +String role
-        +login()
-        +logout()
+        +login(email, password) Session
+        +logout(session_id) void
+        +getInfo() UserInfo
+    }
+
+    class Session {
+        +String session_id
+        +Integer user_id
+        +String email
+        +String role
+        +DateTime created_at
+        +DateTime expires_at
+        +isValid() bool
     }
 
     class Certificate {
@@ -19,10 +29,12 @@
         +String status
         +String blockchain_hash
         +String tx_hash
-        +String created_at
-        +issue()
-        +verify()
-        +revoke()
+        +DateTime created_at
+        +issue() Certificate
+        +verify() Certificate
+        +revoke() void
+        +updateStatus(status) void
+        +delete() void
     }
 
     class AuditLog {
@@ -32,10 +44,20 @@
         +String performed_by
         +String timestamp
         +String details
-        +record()
+        +record() void
     }
 
-    User "1" -- "*" Certificate : "émet/gère (Admin)"
-    User "1" -- "*" Certificate : "consulte (Etudiant)"
-    User "1" -- "*" AuditLog : "génère"
-    Certificate "1" -- "*" AuditLog : "tracé par"
+    class BlockchainService {
+        +String network
+        +String contract_address
+        +bool connected
+        +recordHash(hash) String
+        +getStatus() BlockchainStatus
+    }
+
+    User "1" --> "0..*" Session : crée
+    User "1" --> "0..*" Certificate : émet/gère (Admin)
+    User "1" --> "0..*" Certificate : consulte (Étudiant)
+    User "1" --> "0..*" AuditLog : génère
+    Certificate "1" --> "0..*" AuditLog : tracé par
+    Certificate "1" --> "1" BlockchainService : enregistre hash via
