@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartCert — Connexion</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --navy:       #001d39;
+      --blue-dark:  #0a4174;
+      --teal:       #4e8ea2;
+      --blue-sky:   #7bbde8;
+      --blue-pale:  #bdd8e9;
+      --text-muted: #6ea2b3;
+      --gradient:   linear-gradient(135deg, #0a4174, #4e8ea2);
+      --border:     rgba(78,142,162,0.22);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "DM Sans", sans-serif;
+      background: var(--navy);
+      color: var(--blue-pale);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    h1,h2,h3,h4 { font-family: "Syne", sans-serif; }
+
+    /* Orbs d'arrière-plan */
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .orb-1 {
+      width: 520px; height: 520px;
+      background: radial-gradient(circle, rgba(78,142,162,.18) 0%, transparent 70%);
+      top: -160px; left: -120px;
+    }
+    .orb-2 {
+      width: 420px; height: 420px;
+      background: radial-gradient(circle, rgba(10,65,116,.35) 0%, transparent 70%);
+      bottom: -110px; right: -60px;
+    }
+
+    /* Carte principale */
+    .login-card {
+      background: rgba(10,65,116,.5);
+      backdrop-filter: blur(18px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 48px 44px;
+      width: 100%;
+      max-width: 440px;
+      position: relative;
+      z-index: 10;
+      animation: fadeUp .65s ease both;
+      box-shadow: 0 24px 64px rgba(0,0,0,.5);
+    }
+
+    /* Logo */
+    .logo-img {
+      width: 80px; height: 56px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto 10px;
+    }
+    .brand-name {
+      font-family: "Syne", sans-serif;
+      font-weight: 800;
+      font-size: 1.5rem;
+      color: var(--blue-sky);
+      text-align: center;
+      margin-bottom: 2px;
+    }
+    .brand-tag {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: .78rem;
+      letter-spacing: .8px;
+      margin-bottom: 28px;
+    }
+
+    /* Alerte session expirée */
+    .alert-session {
+      background: rgba(251,191,36,.1);
+      border: 1px solid rgba(251,191,36,.3);
+      color: #fbbf24;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: .82rem;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    /* Alerte erreur identifiants */
+    .alert-error {
+      background: rgba(248,113,113,.12);
+      border: 1px solid rgba(248,113,113,.3);
+      color: #fca5a5;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: .82rem;
+      margin-bottom: 18px;
+      display: none;
+    }
+
+    /* Onglets de rôle */
+    .role-tabs {
+      display: flex;
+      background: rgba(0,29,57,.5);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 26px;
+      border: 1px solid var(--border);
+    }
+    .role-tab {
+      flex: 1;
+      padding: 9px;
+      text-align: center;
+      border-radius: 8px;
+      font-size: .84rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all .22s;
+      border: none;
+      background: transparent;
+      font-family: "DM Sans", sans-serif;
+    }
+    .role-tab.active {
+      background: var(--gradient);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(78,142,162,.4);
+    }
+    .role-tab:hover:not(.active) { color: var(--blue-sky); }
+
+    /* Champs */
+    .form-label {
+      font-size: .84rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .input-wrap {
+      position: relative;
+      margin-bottom: 18px;
+    }
+    .field {
+      width: 100%;
+      background: rgba(0,29,57,.6);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 40px 12px 38px;
+      color: var(--blue-pale);
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .25s;
+      font-family: "DM Sans", sans-serif;
+    }
+    .field:focus { border-color: var(--teal); }
+    .field::placeholder { color: var(--text-muted); }
+    .field.error { border-color: rgba(248,113,113,.6); }
+    .icon-left {
+      position: absolute;
+      left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: .85rem;
+      pointer-events: none;
+    }
+    .toggle-pw {
+      position: absolute;
+      right: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: .85rem;
+    }
+    .toggle-pw:hover { color: var(--blue-sky); }
+
+    /* Bouton */
+    .btn-login {
+      width: 100%;
+      background: var(--gradient);
+      border: none;
+      color: #fff;
+      padding: 14px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: .94rem;
+      cursor: pointer;
+      transition: transform .18s, box-shadow .18s;
+      box-shadow: 0 4px 20px rgba(78,142,162,.35);
+      font-family: "DM Sans", sans-serif;
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-login:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(78,142,162,.5);
+    }
+    .btn-login:disabled { opacity: .7; cursor: not-allowed; transform: none; }
+
+    /* Hint d'identifiants démo */
+    .demo-hint {
+      background: rgba(78,142,162,.08);
+      border: 1px solid rgba(78,142,162,.2);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: .75rem;
+      color: var(--text-muted);
+      margin-top: 16px;
+      display: none;
+    }
+    .demo-hint strong { color: var(--blue-sky); }
+
+    /* Divider & retour */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1; height: 1px;
+      background: var(--border);
+    }
+    .divider span { font-size: .74rem; color: var(--text-muted); white-space: nowrap; }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      font-size: .82rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .back-link:hover { color: var(--blue-sky); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 480px) {
+      .login-card { padding: 36px 22px; margin: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <div class="login-card">
+
+    <!-- Logo & marque -->
+    <img class="logo-img" src="../shared/logo.png" alt="SmartCert">
+    <div class="brand-name">SmartCert</div>
+    <div class="brand-tag">Blockchain Certifications</div>
+
+    <!-- Alerte session expirée / déconnexion -->
+    <div class="alert-session" id="alert-session">
+      <i class="fas fa-clock me-1"></i>
+      <span id="session-msg">Votre session a expiré. Veuillez vous reconnecter.</span>
+    </div>
+
+    <!-- Alerte identifiants incorrects -->
+    <div class="alert-error" id="alert-error">
+      <i class="fas fa-circle-exclamation me-1"></i>
+      <span id="error-msg">Email ou mot de passe incorrect.</span>
+    </div>
+
+    <!-- Onglets Admin / Étudiant -->
+    <div class="role-tabs" role="tablist">
+      <button class="role-tab active" id="tab-admin" role="tab"
+              onclick="switchRole('admin')" aria-selected="true">
+        <i class="fas fa-user-shield me-1"></i>Admin
+      </button>
+      <button class="role-tab" id="tab-etudiant" role="tab"
+              onclick="switchRole('etudiant')" aria-selected="false">
+        <i class="fas fa-graduation-cap me-1"></i>Étudiant
+      </button>
+    </div>
+
+    <!-- Formulaire -->
+    <form id="login-form" onsubmit="handleLogin(event)" novalidate>
+
+      <label class="form-label" for="email-input">Adresse email</label>
+      <div class="input-wrap">
+        <i class="fas fa-envelope icon-left"></i>
+        <input type="email" class="field" id="email-input"
+               placeholder="exemple@smartcert.tn" autocomplete="email" required>
+      </div>
+
+      <label class="form-label" for="pw-input">Mot de passe</label>
+      <div class="input-wrap">
+        <i class="fas fa-lock icon-left"></i>
+        <input type="password" class="field" id="pw-input"
+               placeholder="••••••••" autocomplete="current-password" required>
+        <button type="button" class="toggle-pw" onclick="togglePw()" aria-label="Afficher le mot de passe">
+          <i class="fas fa-eye" id="pw-eye"></i>
+        </button>
+      </div>
+
+      <button type="submit" class="btn-login" id="login-btn">
+        <i class="fas fa-arrow-right-to-bracket"></i>
+        Se connecter
+      </button>
+    </form>
+
+    <!-- Hint identifiants de démo -->
+    <div class="demo-hint" id="demo-hint">
+      <i class="fas fa-circle-info me-1"></i>
+      Démo : <strong id="demo-email">admin@smartcert.tn</strong> /
+      <strong id="demo-pw">admin123</strong>
+    </div>
+
+    <div class="divider"><span>SmartCert · Blockchain Certifications</span></div>
+    <a href="accueil.html" class="back-link">
+      <i class="fas fa-arrow-left me-1"></i> Retour à l'accueil
+    </a>
+
+  </div>
+
+  <script>
+    // ─── Config démo (affichée après échec de connexion) ────
+    const DEMO_ACCOUNTS = {
+      admin:    { email: 'admin@smartcert.tn',    pw: 'admin123',    redirect: 'dashboard.html' },
+      etudiant: { email: 'etudiant@smartcert.tn', pw: 'etudiant123', redirect: 'dashboard-etudiant.html' },
+    };
+
+    const API_BASE = 'http://127.0.0.1:5000';
+    const TOKEN_KEY  = 'smartcert_token';
+    const USER_KEY   = 'smartcert_user';
+    const EXPIRY_KEY = 'smartcert_expiry';
+
+    let currentRole = 'admin';
+    let attemptCount = 0;
+
+    // ─── Lire les query params au chargement ────────────────
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const reason = params.get('reason');
+
+      if (reason === 'session_expired') {
+        document.getElementById('alert-session').style.display = 'block';
+        document.getElementById('session-msg').textContent =
+          'Votre session a expiré. Veuillez vous reconnecter.';
+      } else if (reason === 'logged_out') {
+        document.getElementById('alert-session').style.display = 'block';
+        document.getElementById('session-msg').textContent =
+          'Vous avez été déconnecté avec succès.';
+      } else if (reason === 'unauthorized') {
+        document.getElementById('alert-session').style.display = 'block';
+        document.getElementById('session-msg').textContent =
+          'Accès refusé. Vous n\'avez pas les permissions nécessaires.';
+        document.getElementById('alert-session').style.background = 'rgba(248,113,113,.1)';
+        document.getElementById('alert-session').style.color = '#fca5a5';
+      }
+
+      // Si déjà connecté, rediriger directement
+      const token  = sessionStorage.getItem(TOKEN_KEY);
+      const expiry = parseInt(sessionStorage.getItem(EXPIRY_KEY) || '0');
+      if (token && Date.now() < expiry && !reason) {
+        const user = JSON.parse(sessionStorage.getItem(USER_KEY) || '{}');
+        const dest = DEMO_ACCOUNTS[user.role]?.redirect || 'dashboard.html';
+        window.location.replace(dest);
+      }
+    });
+
+    // ─── Basculer entre rôles ────────────────────────────────
+    function switchRole(role) {
+      currentRole = role;
+      document.getElementById('tab-admin').classList.toggle('active', role === 'admin');
+      document.getElementById('tab-etudiant').classList.toggle('active', role === 'etudiant');
+      document.getElementById('alert-error').style.display = 'none';
+      document.getElementById('demo-hint').style.display = 'none';
+
+      // Pré-remplir l'email selon le rôle sélectionné (UX démo)
+      const emailField = document.getElementById('email-input');
+      if (!emailField.value || Object.values(DEMO_ACCOUNTS).some(a => a.email === emailField.value)) {
+        emailField.value = DEMO_ACCOUNTS[role].email;
+      }
+    }
+
+    // ─── Afficher/masquer le mot de passe ───────────────────
+    function togglePw() {
+      const input = document.getElementById('pw-input');
+      const icon  = document.getElementById('pw-eye');
+      const isHidden = input.type === 'password';
+      input.type = isHidden ? 'text' : 'password';
+      icon.className = isHidden ? 'fas fa-eye-slash' : 'fas fa-eye';
+    }
+
+    // ─── Soumission du formulaire ────────────────────────────
+    async function handleLogin(e) {
+      e.preventDefault();
+      const btn   = document.getElementById('login-btn');
+      const email = document.getElementById('email-input').value.trim();
+      const pw    = document.getElementById('pw-input').value;
+
+      // Masquer les alertes précédentes
+      document.getElementById('alert-error').style.display = 'none';
+      document.getElementById('alert-session').style.display = 'none';
+      document.getElementById('email-input').classList.remove('error');
+      document.getElementById('pw-input').classList.remove('error');
+
+      // Validation basique
+      if (!email || !pw) {
+        showError('Veuillez remplir tous les champs.');
+        return;
+      }
+
+      // État chargement
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion en cours…';
+
+      try {
+        // ── Appel API ────────────────────────────────────────
+        const res  = await fetch(`${API_BASE}/auth/login`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ email, password: pw }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Identifiants incorrects');
+
+        // ── Stocker le JWT ───────────────────────────────────
+        const expiry = Date.now() + (data.expires_in * 1000) - (5 * 60 * 1000);
+        sessionStorage.setItem(TOKEN_KEY,  data.token);
+        sessionStorage.setItem(USER_KEY,   JSON.stringify(data.user));
+        sessionStorage.setItem(EXPIRY_KEY, expiry.toString());
+
+        // ── Succès ───────────────────────────────────────────
+        btn.innerHTML = '<i class="fas fa-circle-check"></i> Connecté !';
+        btn.style.background = 'linear-gradient(135deg, #059669, #10B981)';
+        btn.style.boxShadow  = '0 8px 24px rgba(16,185,129,.4)';
+
+        const redirect = DEMO_ACCOUNTS[data.user.role]?.redirect || 'dashboard.html';
+        setTimeout(() => window.location.href = redirect, 700);
+
+      } catch (err) {
+        // ── Erreur réseau → mode démo ────────────────────────
+        const isNetworkErr = err.name === 'TypeError' || err.message.includes('fetch');
+
+        if (isNetworkErr) {
+          const demo = DEMO_ACCOUNTS[currentRole];
+          if (email === demo.email && pw === demo.pw) {
+            // Mode démo offline
+            const fakeUser = { email, role: currentRole, name: currentRole === 'admin' ? 'Administrateur SmartCert' : 'Étudiant Démo' };
+            const expiry   = Date.now() + 8 * 3600 * 1000;
+            sessionStorage.setItem(TOKEN_KEY,  'demo-offline-token');
+            sessionStorage.setItem(USER_KEY,   JSON.stringify(fakeUser));
+            sessionStorage.setItem(EXPIRY_KEY, expiry.toString());
+            btn.innerHTML = '<i class="fas fa-circle-check"></i> Mode démo — OK';
+            btn.style.background = 'linear-gradient(135deg,#0369a1,#0ea5e9)';
+            setTimeout(() => window.location.href = demo.redirect, 700);
+            return;
+          } else {
+            showError('Serveur inaccessible. Utilisez les identifiants de démo.');
+          }
+        } else {
+          showError(err.message);
+        }
+
+        attemptCount++;
+        if (attemptCount >= 2) {
+          // Afficher le hint après 2 tentatives échouées
+          const demo = DEMO_ACCOUNTS[currentRole];
+          document.getElementById('demo-email').textContent = demo.email;
+          document.getElementById('demo-pw').textContent    = demo.pw;
+          document.getElementById('demo-hint').style.display = 'block';
+        }
+
+        // Shake sur les champs
+        document.getElementById('email-input').classList.add('error');
+        document.getElementById('pw-input').classList.add('error');
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i> Se connecter';
+        btn.style.background = '';
+        btn.style.boxShadow  = '';
+      }
+    }
+
+    // ─── Afficher un message d'erreur ────────────────────────
+    function showError(msg) {
+      const alert = document.getElementById('alert-error');
+      document.getElementById('error-msg').textContent = msg;
+      alert.style.display = 'block';
+    }
+
+    // Pré-remplir l'email admin au chargement
+    document.getElementById('email-input').value = DEMO_ACCOUNTS['admin'].email;
+  </script>
+</body>
+</html>

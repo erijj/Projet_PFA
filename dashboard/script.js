@@ -4,7 +4,7 @@
    ============================================================ */
 
 // ─── CONFIG ───────────────────────────────────────────────
-let API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5001';
+let API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
 
 // ─── STATE ────────────────────────────────────────────────
 let allCerts     = [];          // all fetched certificates
@@ -15,7 +15,9 @@ const PAGE_SIZE   = 8;
 let certToDelete  = null;       // id of cert pending delete confirmation
 
 // ─── INIT ─────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  await requireAuthOrRedirect();
+
   // init settings input
   const s = document.getElementById('s-url');
   if (s) s.value = API_BASE;
@@ -27,6 +29,33 @@ document.addEventListener('DOMContentLoaded', () => {
   checkChainStatus();
   loadCertificates();
 });
+
+// ─── AUTH ─────────────────────────────────────────────────
+async function requireAuthOrRedirect() {
+  try {
+    const res  = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
+    const data = await res.json();
+    if (!data.authenticated) {
+      window.location.href = '../frontend/login.html';
+      return;
+    }
+    // Display user info in sidebar
+    const user = data.user;
+    const nameEl   = document.getElementById('user-name');
+    const roleEl   = document.getElementById('user-role');
+    const avatarEl = document.getElementById('user-avatar');
+    if (nameEl)   nameEl.textContent   = user.email ? user.email.split('@')[0] : 'Utilisateur';
+    if (roleEl)   roleEl.textContent   = user.role === 'admin' ? 'Administrateur' : 'Étudiant';
+    if (avatarEl) avatarEl.textContent = user.email ? user.email[0].toUpperCase() : 'U';
+  } catch {
+    window.location.href = '../frontend/login.html';
+  }
+}
+
+async function logout() {
+  await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
+  window.location.href = '../frontend/login.html';
+}
 
 // ─── NAVIGATION ───────────────────────────────────────────
 function showPage(page) {
@@ -63,7 +92,7 @@ function showPage(page) {
 async function checkChainStatus() {
   const el = document.getElementById('chain-status-text');
   try {
-    const res = await fetch(`${API_BASE}/chain/status`);
+    const res = await fetch(`${API_BASE}/chain/status`, { credentials: 'include' });
     const data = await res.json();
     if (data.connected) {
       el.textContent = `Ethereum Testnet · v${data.web3_version || '—'}`;
@@ -82,7 +111,7 @@ async function checkChainStatus() {
 async function loadChainInfo() {
   const el = document.getElementById('chainInfo');
   try {
-    const res = await fetch(`${API_BASE}/chain/status`);
+    const res = await fetch(`${API_BASE}/chain/status`, { credentials: 'include' });
     const d = await res.json();
     el.innerHTML = `
       <div class="info-grid">
@@ -103,7 +132,7 @@ async function loadChainInfo() {
 // ─── LOAD CERTIFICATES ────────────────────────────────────
 async function loadCertificates() {
   try {
-    const res = await fetch(`${API_BASE}/certificates`);
+    const res = await fetch(`${API_BASE}/certificates`, { credentials: 'include' });
     const data = await res.json();
     allCerts = data.certificates || data || [];
     filteredCerts = [...allCerts];
@@ -304,7 +333,7 @@ async function confirmDelete() {
   btn.disabled = true;
 
   try {
-    const res = await fetch(`${API_BASE}/certificates/${certToDelete}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/certificates/${certToDelete}`, { method: 'DELETE', credentials: 'include' });
     if (res.ok) {
       showToast('🗑 Certificat supprimé', 'success');
       await loadCertificates();
@@ -339,9 +368,10 @@ async function issueCertificate() {
 
   try {
     const res = await fetch(`${API_BASE}/certificates`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recipient_name: name, email, program: prog, institution: inst, issue_date: date }),
+      method:      'POST',
+      headers:     { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body:        JSON.stringify({ recipient_name: name, email, program: prog, institution: inst, issue_date: date }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -377,7 +407,7 @@ async function verifyCertificate() {
   result.innerHTML = `<div style="color:var(--text-muted);font-size:13px"><span class="spinner"></span> Vérification en cours…</div>`;
 
   try {
-    const res = await fetch(`${API_BASE}/certificates/verify/${encodeURIComponent(id)}`);
+    const res = await fetch(`${API_BASE}/certificates/verify/${encodeURIComponent(id)}`, { credentials: 'include' });
     const data = await res.json();
 
     if (data.valid || data.verified) {
