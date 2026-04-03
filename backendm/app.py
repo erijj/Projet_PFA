@@ -20,7 +20,7 @@ DATABASE      = os.path.join(BASE_DIR, 'database.db')
 WEB3_PROVIDER = os.getenv('WEB3_PROVIDER', 'http://127.0.0.1:7545')
 w3 = Web3(Web3.HTTPProvider(WEB3_PROVIDER))
 #changementtest
-
+#changementtest
 # ─── DATABASE ─────────────────────────────────────────────
 def get_db():
     conn = sqlite3.connect(DATABASE)
