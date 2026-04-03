@@ -1,24 +1,41 @@
-'use this link to generate the diagram: https://mermaid.ai/app/dashboard or use a local mermaid live editor to visualize the diagram. Make sure to copy the entire code snippet below and paste it into the editor to see the use case diagram for the SmartCert System.'
-'usecaseDiagram'
-    actor "Administrateur" as Admin
-    actor "Étudiant" as Etudiant
-    actor "Public / Vérificateur" as Visiteur
+flowchart LR
+    Admin(["👤 Administrateur"])
+    Etudiant(["👤 Étudiant"])
+    Visiteur(["👤 Public / Vérificateur"])
 
-    package "SmartCert System" {
-        usecase "Se connecter" as UC_Login
-        usecase "Émettre un certificat" as UC_Issue
-        usecase "Révoquer/Gérer" as UC_Manage
-        usecase "Voir le Dashboard" as UC_Dash
-        usecase "Consulter ses certificats" as UC_View
-        usecase "Vérifier un certificat (Publique)" as UC_Verify
-    }
+    subgraph SmartCert System
+        UC1["Se connecter"]
+        UC2["Se déconnecter"]
+        UC3["Émettre un certificat"]
+        UC4["Révoquer un certificat"]
+        UC5["Mettre à jour le statut d'un certificat"]
+        UC6["Supprimer un certificat"]
+        UC7["Voir le Dashboard / Statistiques"]
+        UC8["Consulter la liste des certificats"]
+        UC9["Consulter un certificat"]
+        UC10["Vérifier un certificat (par ID ou hash)"]
+        UC11["Consulter les logs d'audit"]
+        UC12["Voir le statut blockchain"]
+        UC13["Utiliser le chatbot"]
+    end
 
-    Admin --> UC_Login
-    Admin --> UC_Issue
-    Admin --> UC_Manage
-    Admin --> UC_Dash
+    Admin --> UC1
+    Admin --> UC2
+    Admin --> UC3
+    Admin --> UC4
+    Admin --> UC5
+    Admin --> UC6
+    Admin --> UC7
+    Admin --> UC8
+    Admin --> UC9
+    Admin --> UC11
+    Admin --> UC12
 
-    Etudiant --> UC_Login
-    Etudiant --> UC_View
+    Etudiant --> UC1
+    Etudiant --> UC2
+    Etudiant --> UC8
+    Etudiant --> UC9
+    Etudiant --> UC10
 
-    Visiteur --> UC_Verify
+    Visiteur --> UC10
+    Visiteur --> UC13
