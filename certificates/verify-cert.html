@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartCert — Vérification Publique</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:   #001D39;
+      --blue1:  #0A4174;
+      --blue2:  #49769F;
+      --teal:   #4E8EA2;
+      --sky:    #6EA2B3;
+      --accent: #7BBDE8;
+      --pale:   #BDD8E9;
+      --green:  #10b981;
+      --red:    #ef4444;
+      --border: rgba(78,142,162,0.22);
+      --grad:   linear-gradient(135deg,#0A4174,#4E8EA2);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{min-height:100vh;font-family:'Syne',sans-serif;background:var(--navy);color:var(--pale);display:flex;flex-direction:column}
+
+    body::before{
+      content:'';position:fixed;inset:0;
+      background:
+        radial-gradient(ellipse at 20% 20%,rgba(123,189,232,.07) 0%,transparent 55%),
+        radial-gradient(ellipse at 80% 80%,rgba(78,142,162,.08) 0%,transparent 55%);
+      pointer-events:none;z-index:0;
+    }
+    body::after{
+      content:'';position:fixed;inset:0;
+      background-image:linear-gradient(rgba(78,142,162,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(78,142,162,.03) 1px,transparent 1px);
+      background-size:44px 44px;pointer-events:none;z-index:0;
+    }
+
+    /* ── NAV ── */
+    nav{
+      position:relative;z-index:1;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px 28px;background:rgba(0,29,57,.94);
+      border-bottom:1px solid var(--border);backdrop-filter:blur(20px);
+    }
+    .brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+    .brand-logo{width:40px;height:40px;border-radius:10px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 0 16px rgba(123,189,232,.3)}
+    .brand-name{font-weight:800;font-size:20px;background:linear-gradient(90deg,var(--accent),var(--pale));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .brand-sub{font-family:'Space Mono',monospace;font-size:8px;color:var(--sky);letter-spacing:2px;text-transform:uppercase}
+    .nav-right{display:flex;align-items:center;gap:10px}
+    .chain-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.22);border-radius:12px;font-family:'Space Mono',monospace;font-size:10px;color:var(--green)}
+    .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2s infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+    .nav-link{padding:6px 13px;background:rgba(78,142,162,.08);border:1px solid var(--border);border-radius:8px;color:var(--sky);text-decoration:none;font-size:12px;font-weight:600;transition:all .2s}
+    .nav-link:hover{background:rgba(78,142,162,.18);color:var(--accent)}
+
+    /* ── HERO ── */
+    .hero{
+      position:relative;z-index:1;
+      text-align:center;padding:64px 24px 40px;
+    }
+    .hero-badge{
+      display:inline-flex;align-items:center;gap:7px;
+      padding:6px 16px;background:rgba(78,142,162,.1);
+      border:1px solid var(--border);border-radius:24px;
+      font-family:'Space Mono',monospace;font-size:10px;color:var(--sky);
+      margin-bottom:22px;
+    }
+    .hero h1{font-size:clamp(28px,5vw,46px);font-weight:800;line-height:1.15;margin-bottom:12px}
+    .hero h1 span{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .hero-sub{font-size:15px;color:var(--sky);max-width:480px;margin:0 auto 36px;line-height:1.7}
+
+    /* ── SEARCH BOX ── */
+    .search-container{position:relative;z-index:1;max-width:620px;margin:0 auto;padding:0 20px}
+    .search-card{
+      background:rgba(10,65,116,.5);border:1px solid var(--border);
+      border-radius:18px;padding:28px;backdrop-filter:blur(12px);
+      box-shadow:0 20px 60px rgba(0,0,0,.4);
+    }
+    .search-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--sky);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px}
+    .search-row{display:flex;gap:10px}
+    .cert-input{
+      flex:1;background:rgba(0,0,0,.35);
+      border:1.5px solid var(--border);border-radius:11px;
+      padding:14px 18px;color:var(--pale);
+      font-family:'Space Mono',monospace;font-size:13px;
+      outline:none;transition:border-color .2s,box-shadow .2s;
+    }
+    .cert-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(123,189,232,.1)}
+    .cert-input::placeholder{color:rgba(110,162,179,.5)}
+    .btn-verify{
+      padding:14px 26px;background:var(--grad);border:none;border-radius:11px;
+      color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;
+      cursor:pointer;white-space:nowrap;
+      transition:transform .2s,box-shadow .2s;
+      box-shadow:0 4px 20px rgba(78,142,162,.35);
+    }
+    .btn-verify:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(78,142,162,.5)}
+    .btn-verify:disabled{opacity:.55;cursor:not-allowed;transform:none}
+    .search-hint{font-size:11px;color:var(--sky);margin-top:10px;text-align:center}
+
+    /* ── RESULT ── */
+    .result-section{position:relative;z-index:1;max-width:620px;margin:24px auto 0;padding:0 20px}
+
+    /* valid */
+    .cert-valid-card{
+      background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.3);
+      border-radius:16px;overflow:hidden;animation:fadeUp .45s ease;
+    }
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+    .valid-header{
+      display:flex;align-items:center;gap:14px;
+      padding:20px 24px;background:rgba(16,185,129,.07);
+      border-bottom:1px solid rgba(16,185,129,.15);
+    }
+    .valid-icon{font-size:32px}
+    .valid-title{font-size:18px;font-weight:800;color:var(--green)}
+    .valid-subtitle{font-size:12px;color:rgba(16,185,129,.7);margin-top:2px}
+    .verified-stamp{
+      margin-left:auto;padding:5px 13px;
+      background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);
+      border-radius:20px;font-family:'Space Mono',monospace;font-size:10px;color:var(--green);
+    }
+
+    /* cert preview - paper style */
+    .cert-paper{
+      margin:20px;background:white;border-radius:12px;padding:32px;text-align:center;
+      box-shadow:0 8px 30px rgba(0,0,0,.3);
+      border:3px double #1a3a7a;
+    }
+    .paper-header{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px}
+    .paper-seal{font-size:26px}
+    .paper-uni{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#4a6a9a;font-weight:700}
+    .paper-divider{border:none;border-top:1px solid #c8d8ea;margin:10px 0}
+    .paper-label{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#4a6a9a;margin-bottom:6px}
+    .paper-name{font-size:26px;font-weight:700;color:#0a1628;margin:8px 0;font-family:Georgia,serif}
+    .paper-desc{font-size:12px;color:#4a6a9a;margin-bottom:4px}
+    .paper-program{font-size:16px;font-weight:700;color:#1a3a7a;margin:4px 0 16px}
+    .paper-meta{display:flex;justify-content:space-around;border-top:1px solid #c8d8ea;padding-top:12px;margin-top:8px}
+    .paper-field{text-align:center}
+    .paper-field-label{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#4a6a9a}
+    .paper-field-value{font-size:12px;font-weight:700;color:#0a1628;margin-top:2px}
+
+    /* details grid */
+    .details-grid{
+      display:grid;grid-template-columns:1fr 1fr;gap:12px;
+      padding:20px 24px;
+    }
+    .detail-field label{font-size:10px;color:var(--sky);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px}
+    .detail-field p{font-size:13px;color:var(--pale);font-weight:600}
+
+    .hash-section{padding:0 24px 20px}
+    .hash-label{font-size:10px;color:var(--sky);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+    .hash-display{
+      background:rgba(0,0,0,.35);border:1px solid var(--border);
+      border-radius:8px;padding:10px 14px;
+      font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);
+      word-break:break-all;line-height:1.9;
+    }
+
+    .valid-footer{padding:14px 24px;border-top:1px solid rgba(16,185,129,.15);display:flex;gap:10px;justify-content:flex-end}
+    .btn-share{padding:9px 18px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--sky);cursor:pointer;font-family:'Syne',sans-serif;font-size:12px;transition:all .2s}
+    .btn-share:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-dl{padding:9px 18px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:8px;color:var(--green);cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;transition:all .2s}
+    .btn-dl:hover{background:rgba(16,185,129,.2)}
+
+    /* invalid */
+    .cert-invalid-card{
+      background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.25);
+      border-radius:16px;padding:28px;animation:fadeUp .45s ease;
+      text-align:center;
+    }
+    .invalid-icon{font-size:44px;margin-bottom:12px}
+    .invalid-title{font-size:18px;font-weight:800;color:var(--red);margin-bottom:8px}
+    .invalid-msg{font-size:13px;color:var(--sky);line-height:1.7}
+
+    /* ── FEATURES ── */
+    .features{
+      position:relative;z-index:1;
+      display:flex;gap:14px;flex-wrap:wrap;justify-content:center;
+      max-width:680px;margin:48px auto 40px;padding:0 20px;
+    }
+    .feat{
+      flex:1;min-width:170px;background:rgba(10,65,116,.35);
+      border:1px solid var(--border);border-radius:12px;padding:18px;
+      text-align:center;
+    }
+    .feat-icon{font-size:24px;margin-bottom:8px}
+    .feat-title{font-size:13px;font-weight:700;color:var(--pale);margin-bottom:4px}
+    .feat-desc{font-size:11.5px;color:var(--sky);line-height:1.6}
+
+    /* ── FOOTER ── */
+    footer{
+      position:relative;z-index:1;margin-top:auto;
+      padding:24px 28px;border-top:1px solid var(--border);
+      text-align:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--sky);
+    }
+
+    /* spinner */
+    .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .65s linear infinite;display:inline-block;vertical-align:middle}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    @media(max-width:540px){
+      .search-row{flex-direction:column}
+      .details-grid{grid-template-columns:1fr}
+      .paper-meta{flex-direction:column;gap:10px}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a class="brand" href="index.html">
+      <div class="brand-logo">
+          <img src="../shared/logo.png" alt="SmartCert"
+               onerror="this.parentElement.innerHTML='🎓'"
+               style="width:100%;height:100%;object-fit:contain;border-radius:11px">
+        </div>
+      <div>
+        <div class="brand-name">SmartCert</div>
+        <div class="brand-sub">Blockchain Certificates</div>
+      </div>
+    </a>
+    <div class="nav-right">
+      <div class="chain-pill"><div class="dot"></div> Ethereum Testnet</div>
+      <a class="nav-link" href="login.html">Se connecter</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">⛓️ Powered by Ethereum Blockchain</div>
+    <h1>Vérifiez l'authenticité d'un<br><span>certificat numérique</span></h1>
+    <p class="hero-sub">Entrez l'identifiant du certificat pour confirmer son authenticité de manière instantanée et infalsifiable.</p>
+  </div>
+  
+  <!-- SEARCH -->
+  <div class="search-container">
+    <div class="search-card">
+      <div class="search-label">🔍 Identifiant du Certificat</div>
+      <div class="search-row">
+        <input
+          class="cert-input"
+          id="certIdInput"
+          placeholder="Ex : CERT-2024-A1B2C3"
+          onkeydown="if(event.key==='Enter')verifyCert()"
+        />
+        <button class="btn-verify" id="verifyBtn" onclick="verifyCert()">⚡ Vérifier</button>
+      </div>
+      <div class="search-hint">Format : <strong style="color:var(--accent)">CERT-AAAA-XXXXXX</strong> · Trouvable sur votre email ou votre PDF</div>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="result-section" id="resultSection"></div>
+
+  <!-- FEATURES -->
+  <div class="features">
+    <div class="feat">
+      <div class="feat-icon">⛓️</div>
+      <div class="feat-title">Blockchain Ethereum</div>
+      <div class="feat-desc">Hash enregistré de manière immuable sur le réseau Ethereum.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">⚡</div>
+      <div class="feat-title">Vérification Instantanée</div>
+      <div class="feat-desc">Résultat en moins d'une seconde, disponible 24h/24.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">🔒</div>
+      <div class="feat-title">Infalsifiable</div>
+      <div class="feat-desc">SHA-256 garantit l'intégrité absolue du certificat.</div>
+    </div>
+  </div>
+
+  <footer>SmartCert &copy; 2024 · Blockchain Certificate Verification · Ethereum Testnet</footer>
+
+<script>
+  const API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
+
+  // Pre-fill from URL param
+  window.addEventListener('load', () => {
+    const id = new URLSearchParams(window.location.search).get('id');
+    if (id) { document.getElementById('certIdInput').value = id; verifyCert(); }
+  });
+
+  async function verifyCert() {
+    const id  = document.getElementById('certIdInput').value.trim();
+    const res = document.getElementById('resultSection');
+    const btn = document.getElementById('verifyBtn');
+    if (!id) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Vérification…';
+    res.innerHTML = '<div style="text-align:center;padding:20px;color:var(--sky);font-size:13px"><span class="spinner"></span> Interrogation de la blockchain…</div>';
+
+    try {
+      const r    = await fetch(`${API_BASE}/certificates/verify/${encodeURIComponent(id)}`);
+      const data = await r.json();
+
+      if (r.status === 404 || !data.valid) {
+        res.innerHTML = buildInvalid(data, id);
+      } else {
+        res.innerHTML = buildValid(data);
+        // share URL
+        const url = `${location.origin}${location.pathname}?id=${encodeURIComponent(id)}`;
+        document.getElementById('shareUrl').value = url;
+      }
+    } catch {
+      res.innerHTML = `
+        <div class="cert-invalid-card">
+          <div class="invalid-icon">🔌</div>
+          <div class="invalid-title">Serveur non disponible</div>
+          <div class="invalid-msg">Le backend Flask n'est pas accessible sur <strong style="color:var(--accent)">${API_BASE}</strong>.<br>Démarrez le serveur puis réessayez.</div>
+        </div>`;
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Vérifier';
+    res.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function buildValid(d) {
+    const date = (d.issue_date || d.date || '—').split('T')[0];
+    const name = escHtml(d.recipient_name || d.name || '—');
+    const prog = escHtml(d.program || '—');
+    const inst = escHtml(d.institution || 'SmartCert University');
+    const id   = escHtml(d.id || d.cert_id || '—');
+    return `
+      <div class="cert-valid-card">
+        <div class="valid-header">
+          <div class="valid-icon">✅</div>
+          <div>
+            <div class="valid-title">Certificat Authentique</div>
+            <div class="valid-subtitle">Vérifié sur la blockchain Ethereum · ID ${id}</div>
+          </div>
+          <div class="verified-stamp">⛓ VÉRIFIÉ</div>
+        </div>
+
+        <!-- Paper cert -->
+        <div class="cert-paper">
+          <div class="paper-header">
+            <div class="paper-seal">🎓</div>
+            <div class="paper-uni">${inst}</div>
+          </div>
+          <hr class="paper-divider">
+          <div class="paper-label">Certifie que</div>
+          <div class="paper-name">${name}</div>
+          <div class="paper-desc">a complété avec succès le programme</div>
+          <div class="paper-program">${prog}</div>
+          <div class="paper-meta">
+            <div class="paper-field"><div class="paper-field-label">Date</div><div class="paper-field-value">${date}</div></div>
+            <div class="paper-field"><div class="paper-field-label">Identifiant</div><div class="paper-field-value" style="font-family:monospace;font-size:10px">${id}</div></div>
+            <div class="paper-field"><div class="paper-field-label">Statut</div><div class="paper-field-value" style="color:#1a7a4a">${escHtml(d.status || 'Vérifié')}</div></div>
+          </div>
+        </div>
+
+        <!-- Details -->
+        <div class="details-grid">
+          <div class="detail-field"><label>Bénéficiaire</label><p>${name}</p></div>
+          <div class="detail-field"><label>Email</label><p>${escHtml(d.email || '—')}</p></div>
+          <div class="detail-field"><label>Programme</label><p>${prog}</p></div>
+          <div class="detail-field"><label>Institution</label><p>${inst}</p></div>
+        </div>
+
+        ${d.blockchain_hash ? `
+        <div class="hash-section">
+          <div class="hash-label">⛓ Hash Blockchain (SHA-256)</div>
+          <div class="hash-display">${escHtml(d.blockchain_hash)}</div>
+        </div>` : ''}
+
+        <div class="valid-footer">
+          <button class="btn-share" onclick="copyShareLink()">🔗 Copier le lien</button>
+          <button class="btn-dl" onclick="alert('PDF disponible via l\'API backend')">⬇ Télécharger PDF</button>
+        </div>
+      </div>
+      <input type="hidden" id="shareUrl" value="">`;
+  }
+
+  function buildInvalid(d, id) {
+    return `
+      <div class="cert-invalid-card">
+        <div class="invalid-icon">❌</div>
+        <div class="invalid-title">Certificat Introuvable ou Invalide</div>
+        <div class="invalid-msg">
+          ${escHtml(d.message || 'Aucun certificat trouvé pour cet identifiant.')}<br><br>
+          Identifiant recherché : <strong style="color:var(--accent);font-family:'Space Mono',monospace">${escHtml(id)}</strong><br><br>
+          Vérifiez que l'identifiant est correct. Le certificat peut avoir été révoqué.
+        </div>
+      </div>`;
+  }
+
+  function copyShareLink() {
+    const url = document.getElementById('shareUrl')?.value;
+    if (!url) return;
+    navigator.clipboard.writeText(url).then(() => alert('Lien copié dans le presse-papiers !')).catch(() => {});
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>
