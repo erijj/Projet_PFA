@@ -28,7 +28,16 @@ if app.secret_key == "CHANGE_ME_TO_A_RANDOM_SECRET_IN_PROD" and not app.debug:
     warnings.warn("FLASK_SECRET_KEY non défini — utilisez une clé secrète forte en production !", stacklevel=2)
 
 # ─── CORS (credentials required for HttpOnly cookies) ─────
-CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500", "http://localhost:5500", "null"])
+CORS(app, supports_credentials=True, origins=[
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "http://127.0.0.1:3000",
+    "http://localhost:3000",
+    "http://127.0.0.1:8080",
+    "http://localhost:8080",
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+])
 
 # ─── CONFIG ───────────────────────────────────────────────
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))

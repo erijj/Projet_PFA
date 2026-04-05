@@ -16,7 +16,8 @@ let certToDelete  = null;       // id of cert pending delete confirmation
 
 // ─── INIT ─────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  await requireAuthOrRedirect();
+  const authenticated = await requireAuthOrRedirect();
+  if (!authenticated) return;
 
   // init settings input
   const s = document.getElementById('s-url');
@@ -37,7 +38,7 @@ async function requireAuthOrRedirect() {
     const data = await res.json();
     if (!data.authenticated) {
       window.location.href = '../frontend/login.html';
-      return;
+      return false;
     }
     // Display user info in sidebar
     const user = data.user;
@@ -47,8 +48,10 @@ async function requireAuthOrRedirect() {
     if (nameEl)   nameEl.textContent   = user.email ? user.email.split('@')[0] : 'Utilisateur';
     if (roleEl)   roleEl.textContent   = user.role === 'admin' ? 'Administrateur' : 'Étudiant';
     if (avatarEl) avatarEl.textContent = user.email ? user.email[0].toUpperCase() : 'U';
+    return true;
   } catch {
     window.location.href = '../frontend/login.html';
+    return false;
   }
 }
 
