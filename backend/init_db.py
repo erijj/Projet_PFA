@@ -1,6 +1,6 @@
 """
 SmartCert — init_db.py
-initialiser la base de données SQLite certificates.db
+initialiser la base de données SQLite database.db
 """
 
 import sqlite3
@@ -17,7 +17,7 @@ import random                            # ما تستعملتش
 
 # المسار — نفس مجلد init_db.py
 
-DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'certificates.db') # غيرت 'database.db' إلى 'certificates.db' لتتوافق مع اسم قاعدة البيانات المستخدمة في المشروع.
+DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database.db')
 
 
 # SCHEMA — جدولين
@@ -179,7 +179,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print(f"\n🎉 Terminé : {inserted} certificats insérés dans certificates.db")
+    print(f"\n🎉 Terminé : {inserted} certificats insérés dans database.db")
     print("▶ Lancez le backend : python app.py")
 
 

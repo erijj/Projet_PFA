@@ -1,3 +1,5 @@
 .DS_Store
 backend/database.db
 backend/__pycache__/
+**/__pycache__/
+*.pyc

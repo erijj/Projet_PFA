@@ -39,7 +39,7 @@
     </form>
 
     <div class="divider"><span>SmartCert · Blockchain Certifications</span></div>
-    <a href="index.html" class="back-link"><i class="fas fa-arrow-left me-1"></i> Retour à l'accueil</a>
+    <a href="accueil.html" class="back-link"><i class="fas fa-arrow-left me-1"></i> Retour à l'accueil</a>
   </div>
 
   <script>
@@ -64,8 +64,8 @@
         const email = document.getElementById('email-input').value;
         const pw = document.getElementById('pw-input').value;
         const comptes = {
-          admin:    {email:'admin@smartcert.tn',    pw:'admin123',    redirect:'dashboard-admin.html'},
-          etudiant: {email:'etudiant@smartcert.tn', pw:'etudiant123', redirect:'dashboard-etudiant.html'}
+          admin:    {email:'admin@smartcert.tn',    pw:'admin123',    redirect:'../dashboard/dashboard.html'},
+          etudiant: {email:'etudiant@smartcert.tn', pw:'etudiant123', redirect:'../certificates/dashboard-etudiant.html'}
         };
         const c = comptes[currentRole];
         if (email===c.email && pw===c.pw) {
