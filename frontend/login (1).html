@@ -43,42 +43,57 @@
   </div>
 
   <script>
-    let currentRole = 'admin';
-    function switchRole(role) {
-      currentRole = role;
-      document.getElementById('tab-admin').classList.toggle('active', role==='admin');
-      document.getElementById('tab-etudiant').classList.toggle('active', role==='etudiant');
-      document.getElementById('alert-error').style.display = 'none';
-    }
+    const API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
+
     function togglePw() {
       const i = document.getElementById('pw-input'), e = document.getElementById('pw-eye');
-      i.type = i.type==='password' ? 'text' : 'password';
-      e.className = i.type==='text' ? 'fas fa-eye-slash' : 'fas fa-eye';
+      i.type = i.type === 'password' ? 'text' : 'password';
+      e.className = i.type === 'text' ? 'fas fa-eye-slash' : 'fas fa-eye';
     }
-    function handleLogin(e) {
+
+    async function handleLogin(e) {
       e.preventDefault();
       const btn = document.getElementById('login-btn');
       btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Connexion...';
       btn.disabled = true;
-      setTimeout(() => {
-        const email = document.getElementById('email-input').value;
-        const pw = document.getElementById('pw-input').value;
-        const comptes = {
-          admin:    {email:'admin@smartcert.tn',    pw:'admin123',    redirect:'../dashboard/dashboard.html'},
-          etudiant: {email:'etudiant@smartcert.tn', pw:'etudiant123', redirect:'../certificates/dashboard-etudiant.html'}
-        };
-        const c = comptes[currentRole];
-        if (email===c.email && pw===c.pw) {
-          btn.innerHTML = '<i class="fas fa-circle-check me-2"></i>Connecté !';
-          btn.style.background = 'linear-gradient(135deg,#059669,#10B981)';
-          setTimeout(() => window.location.href = c.redirect, 800);
-        } else {
-          document.getElementById('alert-error').style.display = 'block';
-          document.getElementById('alert-msg').textContent = 'Identifiants incorrects. Démo : ' + c.email + ' / ' + c.pw;
-          btn.innerHTML = '<i class="fas fa-arrow-right-to-bracket me-2"></i>Se connecter';
+
+      const email = document.getElementById('email-input').value.trim();
+      const pw    = document.getElementById('pw-input').value;
+
+      const errBox = document.getElementById('alert-error');
+      const errMsg = document.getElementById('alert-msg');
+      errBox.style.display = 'none';
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/login`, {
+          method:      'POST',
+          headers:     { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body:        JSON.stringify({ email, password: pw }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          errBox.style.display = 'block';
+          errMsg.textContent   = data.error || 'Erreur de connexion';
           btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-arrow-right-to-bracket me-2"></i>Se connecter';
+          return;
         }
-      }, 1200);
+
+        btn.innerHTML = '<i class="fas fa-circle-check me-2"></i>Connecté !';
+        btn.style.background = 'linear-gradient(135deg,#059669,#10B981)';
+        setTimeout(() => {
+          window.location.href = '../dashboard/dashboard.html';
+        }, 800);
+
+      } catch {
+        errBox.style.display = 'block';
+        errMsg.textContent   = 'Backend inaccessible. Vérifiez que Flask tourne sur ' + API_BASE;
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="fas fa-arrow-right-to-bracket me-2"></i>Se connecter';
+      }
     }
   </script>
 </body>
