@@ -1,6 +1,6 @@
 """
 SmartCert — init_db.py
-initialiser la base de données SQLite database.db
+Initialiser la base de données SQLite database.db.
 """
 
 import sqlite3
