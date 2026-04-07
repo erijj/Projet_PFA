@@ -14,7 +14,7 @@ flowchart LR
         UC7["Voir le Dashboard / Statistiques"]
         UC8["Consulter la liste des certificats"]
         UC9["Consulter un certificat"]
-        UC15["Saisir l'identifiant du certificat (ID/BD)"]
+        UC15["Saisir l'identifiant du certificat (ID / base de données)"]
         UC10["Vérifier un certificat (par ID ou hash)"]
         UC11["Consulter les logs d'audit"]
         UC12["Voir le statut blockchain"]
