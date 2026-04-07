@@ -32,7 +32,7 @@ CORS(app, supports_credentials=True, origins=["http://127.0.0.1:5500", "http://l
 
 # ─── CONFIG ───────────────────────────────────────────────
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
-DATABASE     = os.path.join(BASE_DIR, 'database.db')
+DATABASE     = os.path.join(BASE_DIR, 'certificates.db')
 
 # Ethereum Testnet (Ganache local par défaut)
 # Remplacer par l'URL de votre nœud (Ganache, Infura Sepolia, etc.)
