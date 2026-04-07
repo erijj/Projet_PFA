@@ -56,7 +56,7 @@ SAMPLE_CERTS = [ #حذفت شهادتين (lina,omar)
         'program':        'Licence en Informatique',
         'institution':    'Université de Tunis',
         'issue_date':     '2024-06-15',
-        'status':         'Vérifié',
+        'status':         'En attente',
     },
     {
         'recipient_name': 'Sana Trabelsi',
