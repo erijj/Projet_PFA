@@ -1,45 +1,78 @@
 """
-SmartCert — app.py (version complète avec PDF + Email)
+SmartCert — app.py (VERSION FINALE UNIFIÉE)
+Auth complète + PDF + Email + routes publiques pour verify
+Compatible avec : dashboard.html, script.js, dashboard_candidat.html,
+                  issue-cert.html, verify-cert.html
 """
 
-from flask      import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, make_response, send_file
 from flask_cors import CORS
-from web3       import Web3
-import sqlite3, hashlib, uuid, json, os, io
-from datetime   import datetime
-from typing     import Optional
+from web3 import Web3
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
+import sqlite3
+import os
+import secrets
+import warnings
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 
-# Nouveaux services (fichier cert_services.py dans le même dossier)
-from cert_services import generate_certificate_pdf, send_certificate_email
+from utils import DATABASE, generate_cert_id, compute_hash, fake_tx_hash
 
+# ─── INIT APP ─────────────────────────────────────────────
 app = Flask(__name__)
-CORS(app)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "CHANGE_ME_TO_A_RANDOM_SECRET_IN_PROD")
+if app.secret_key == "CHANGE_ME_TO_A_RANDOM_SECRET_IN_PROD" and not app.debug:
+    warnings.warn(
+        "FLASK_SECRET_KEY non défini — utilisez une clé secrète forte en production !",
+        stacklevel=2
+    )
 
-BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
-DATABASE = os.path.join(BASE_DIR, 'certificates.db')
+# ─── CORS ─────────────────────────────────────────────────
+# Autoriser dashboard (5500) + pages publiques (ouvertes via fichier)
+CORS(app, supports_credentials=True, origins=[
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "http://127.0.0.1:5501",
+    "http://localhost:5501",
+    "null",   # ouverture directe fichier HTML depuis le bureau
+])
+
+# ─── BLOCKCHAIN ───────────────────────────────────────────
 WEB3_PROVIDER = os.getenv('WEB3_PROVIDER', 'http://127.0.0.1:7545')
 w3 = Web3(Web3.HTTPProvider(WEB3_PROVIDER))
-# ─── DATABASE ─────────────────────────────────────────────
+
+# ─── SESSION ──────────────────────────────────────────────
+SESSION_COOKIE          = "smartcert_session"
+SESSION_DURATION_HOURS  = 8
+
+
+# ═══════════════════════════════════════════════════════════
+#  DATABASE
+# ═══════════════════════════════════════════════════════════
+
 def get_db():
+    """Ouvre une connexion SQLite avec retour en dict."""
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
 
+
 def init_db():
-    conn   = get_db()
-    cursor = conn.cursor()
-    cursor.executescript("""
+    """Crée les tables si elles n'existent pas."""
+    conn = get_db()
+    conn.executescript("""
         CREATE TABLE IF NOT EXISTS certificates (
-            id              TEXT PRIMARY KEY,
-            recipient_name  TEXT NOT NULL,
-            email           TEXT NOT NULL,
-            program         TEXT NOT NULL,
-            institution     TEXT DEFAULT 'SmartCert University',
-            issue_date      TEXT NOT NULL,
-            status          TEXT DEFAULT 'Vérifié',
-            blockchain_hash TEXT,
-            tx_hash         TEXT,
-            created_at      TEXT DEFAULT (datetime('now'))
+            id               TEXT PRIMARY KEY,
+            recipient_name   TEXT NOT NULL,
+            email            TEXT NOT NULL,
+            program          TEXT NOT NULL,
+            institution      TEXT DEFAULT 'SmartCert University',
+            issue_date       TEXT NOT NULL,
+            status           TEXT DEFAULT 'En attente',
+            blockchain_hash  TEXT,
+            tx_hash          TEXT,
+            created_at       TEXT DEFAULT (datetime('now'))
         );
         CREATE TABLE IF NOT EXISTS audit_log (
             log_id       INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,22 +82,52 @@ def init_db():
             timestamp    TEXT DEFAULT (datetime('now')),
             details      TEXT
         );
+        CREATE TABLE IF NOT EXISTS users (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            email         TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role          TEXT NOT NULL DEFAULT 'etudiant'
+        );
+        CREATE TABLE IF NOT EXISTS sessions (
+            session_id  TEXT PRIMARY KEY,
+            user_id     INTEGER NOT NULL,
+            email       TEXT NOT NULL,
+            role        TEXT NOT NULL,
+            created_at  TEXT DEFAULT (datetime('now')),
+            expires_at  TEXT NOT NULL
+        );
     """)
     conn.commit()
     conn.close()
     print("✅ Base de données initialisée")
 
-# ─── HELPERS ──────────────────────────────────────────────
-def generate_cert_id():
-    year  = datetime.now().year
-    short = str(uuid.uuid4()).upper()[:6]
-    return f"CERT-{year}-{short}"
 
-def compute_hash(data: dict) -> str:
-    payload = json.dumps(data, sort_keys=True, ensure_ascii=False)
-    return "0x" + hashlib.sha256(payload.encode()).hexdigest()
+def ensure_default_users():
+    """Crée les comptes démo admin et étudiant s'ils n'existent pas."""
+    conn = get_db()
+    defaults = [
+        ("admin@smartcert.tn",    "admin123",    "admin"),
+        ("etudiant@smartcert.tn", "etudiant123", "etudiant"),
+    ]
+    for email, pw, role in defaults:
+        conn.execute(
+            "INSERT OR IGNORE INTO users (email, password_hash, role) VALUES (?, ?, ?)",
+            (email.lower(), generate_password_hash(pw), role),
+        )
+    conn.commit()
+    conn.close()
+    print("✅ Comptes démo vérifiés")
+
+
+# ═══════════════════════════════════════════════════════════
+#  HELPERS
+# ═══════════════════════════════════════════════════════════
 
 def record_on_blockchain(cert_hash: str) -> Optional[str]:
+    """
+    Enregistre le hash sur la blockchain.
+    Fallback vers tx simulé si Ganache non connecté.
+    """
     if w3.is_connected():
         try:
             accounts = w3.eth.accounts
@@ -78,22 +141,102 @@ def record_on_blockchain(cert_hash: str) -> Optional[str]:
                 return tx.hex()
         except Exception as e:
             print(f"⚠ Blockchain tx error: {e}")
-    return "0xtx_" + hashlib.md5(cert_hash.encode()).hexdigest()
+    return fake_tx_hash(cert_hash)
 
-def log_action(action: str, cert_id: str = None, details: str = None):
+
+def log_action(action: str, cert_id: str = None, details: str = None,
+               performed_by: str = 'admin'):
+    """Enregistre une action dans le journal d'audit."""
     conn = get_db()
     conn.execute(
-        "INSERT INTO audit_log (action, cert_id, details) VALUES (?, ?, ?)",
-        (action, cert_id, details)
+        "INSERT INTO audit_log (action, cert_id, details, performed_by) VALUES (?, ?, ?, ?)",
+        (action, cert_id, details, performed_by)
     )
     conn.commit()
     conn.close()
 
-def row_to_dict(row):
+
+def row_to_dict(row) -> dict:
     return dict(row)
 
+
 # ═══════════════════════════════════════════════════════════
-#  ROUTES
+#  SESSION MANAGEMENT
+# ═══════════════════════════════════════════════════════════
+
+def create_session(user_id: int, email: str, role: str) -> str:
+    session_id = secrets.token_hex(32)
+    expires_at = (datetime.now(timezone.utc) + timedelta(hours=SESSION_DURATION_HOURS)).isoformat()
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO sessions (session_id, user_id, email, role, expires_at) VALUES (?, ?, ?, ?, ?)",
+        (session_id, user_id, email, role, expires_at),
+    )
+    conn.commit()
+    conn.close()
+    return session_id
+
+
+def get_session_user() -> Optional[dict]:
+    session_id = request.cookies.get(SESSION_COOKIE)
+    if not session_id:
+        return None
+    conn = get_db()
+    row = conn.execute(
+        "SELECT * FROM sessions WHERE session_id = ?", (session_id,)
+    ).fetchone()
+    conn.close()
+    if not row:
+        return None
+    session = dict(row)
+    try:
+        expires_at = datetime.fromisoformat(session["expires_at"])
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) > expires_at:
+            delete_session(session_id)
+            return None
+    except (ValueError, KeyError):
+        return None
+    return session
+
+
+def delete_session(session_id: str):
+    conn = get_db()
+    conn.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
+    conn.commit()
+    conn.close()
+
+
+# ═══════════════════════════════════════════════════════════
+#  DECORATORS AUTH
+# ═══════════════════════════════════════════════════════════
+
+def login_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if not get_session_user():
+            return jsonify({"error": "Unauthorized"}), 401
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+def role_required(*roles):
+    def deco(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            user = get_session_user()
+            if not user:
+                return jsonify({"error": "Unauthorized"}), 401
+            if user.get("role") not in roles:
+                return jsonify({"error": "Forbidden — rôle insuffisant"}), 403
+            return fn(*args, **kwargs)
+        return wrapper
+    return deco
+
+
+# ═══════════════════════════════════════════════════════════
+#  ROUTES — TEST
 # ═══════════════════════════════════════════════════════════
 
 @app.route('/')
@@ -102,11 +245,84 @@ def home():
         'status':       'success',
         'message':      'API SmartCert — Blockchain Certificate System',
         'web3_version': w3.api,
-        'version':      '1.1.0',
+        'version':      '2.0.0',
     })
+
+
+# ═══════════════════════════════════════════════════════════
+#  ROUTES — AUTH
+# ═══════════════════════════════════════════════════════════
+
+@app.route('/auth/login', methods=['POST'])
+def auth_login():
+    data     = request.get_json() or {}
+    email    = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+
+    if not email or not password:
+        return jsonify({"error": "Email et mot de passe requis"}), 400
+
+    conn = get_db()
+    row  = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    conn.close()
+
+    if not row or not check_password_hash(row["password_hash"], password):
+        return jsonify({"error": "Identifiants incorrects"}), 401
+
+    user       = dict(row)
+    session_id = create_session(user["id"], user["email"], user["role"])
+
+    resp = make_response(jsonify({
+        "message": "Connexion réussie",
+        "user": {"id": user["id"], "email": user["email"], "role": user["role"]},
+    }))
+    resp.set_cookie(
+        SESSION_COOKIE,
+        session_id,
+        httponly=True,
+        samesite="Lax",
+        max_age=SESSION_DURATION_HOURS * 3600,
+        secure=False,  # True en production HTTPS
+    )
+    log_action('LOGIN', details=f"Connexion de {email}", performed_by=email)
+    return resp
+
+
+@app.route('/auth/logout', methods=['POST'])
+def auth_logout():
+    session_id = request.cookies.get(SESSION_COOKIE)
+    if session_id:
+        delete_session(session_id)
+    resp = make_response(jsonify({"message": "Déconnecté"}))
+    resp.delete_cookie(SESSION_COOKIE)
+    return resp
+
+
+@app.route('/auth/me', methods=['GET'])
+def auth_me():
+    user = get_session_user()
+    if not user:
+        return jsonify({"authenticated": False}), 200
+    return jsonify({
+        "authenticated": True,
+        "user": {
+            "id":    user["user_id"],
+            "email": user["email"],
+            "role":  user["role"],
+        },
+    })
+
+
+# ═══════════════════════════════════════════════════════════
+#  ROUTES — BLOCKCHAIN STATUS
+# ═══════════════════════════════════════════════════════════
 
 @app.route('/chain/status')
 def chain_status():
+    """
+    Route PUBLIQUE — utilisée par verify-cert.html sans login.
+    Aussi accessible avec login depuis le dashboard.
+    """
     connected = w3.is_connected()
     return jsonify({
         'connected':        connected,
@@ -116,8 +332,15 @@ def chain_status():
         'message':          'Connexion active' if connected else 'Blockchain non disponible',
     })
 
+
+# ═══════════════════════════════════════════════════════════
+#  ROUTES — CERTIFICATS
+# ═══════════════════════════════════════════════════════════
+
 @app.route('/certificates', methods=['GET'])
+@login_required
 def get_certificates():
+    """Liste tous les certificats — réservé aux utilisateurs connectés."""
     conn = get_db()
     rows = conn.execute(
         "SELECT * FROM certificates ORDER BY created_at DESC"
@@ -128,7 +351,9 @@ def get_certificates():
         'total':        len(rows),
     })
 
+
 @app.route('/certificates/<cert_id>', methods=['GET'])
+@login_required
 def get_certificate(cert_id):
     conn = get_db()
     row  = conn.execute(
@@ -139,9 +364,12 @@ def get_certificate(cert_id):
         return jsonify({'error': 'Certificat introuvable'}), 404
     return jsonify(row_to_dict(row))
 
+
 @app.route('/certificates', methods=['POST'])
+@role_required("admin")
 def issue_certificate():
-    data = request.get_json()
+    """Émet un nouveau certificat — admin seulement."""
+    data = request.get_json() or {}
 
     for field in ['recipient_name', 'email', 'program']:
         if not data.get(field):
@@ -149,7 +377,7 @@ def issue_certificate():
 
     cert_id     = generate_cert_id()
     issue_date  = data.get('issue_date') or datetime.now().strftime('%Y-%m-%d')
-    institution = data.get('institution', 'SmartCert University')
+    institution = data.get('institution') or 'SmartCert University'
 
     hash_payload = {
         'id':             cert_id,
@@ -198,14 +426,17 @@ def issue_certificate():
         'tx_hash':         tx_hash,
     }
 
-    # ── Envoi email automatique ──────────────────────────
+    # ── Envoi email avec PDF en pièce jointe ────────────
+    email_ok = False
     try:
+        from cert_services import generate_certificate_pdf, send_certificate_email
         pdf_buf  = generate_certificate_pdf(cert)
         email_ok = send_certificate_email(cert, pdf_buf)
         log_action('EMAIL_SENT' if email_ok else 'EMAIL_FAILED', cert_id, data['email'])
+    except ImportError:
+        print("⚠ cert_services.py introuvable — email non envoyé")
     except Exception as e:
         print(f"⚠ Email/PDF error: {e}")
-        email_ok = False
 
     log_action('ISSUE', cert_id, f"Émis pour {data['recipient_name']}")
 
@@ -217,8 +448,13 @@ def issue_certificate():
         'email_sent':      email_ok,
     }), 201
 
+
 @app.route('/certificates/verify/<cert_id>', methods=['GET'])
 def verify_certificate(cert_id):
+    """
+    Route PUBLIQUE — accessible sans login.
+    Utilisée par : verify-cert.html, dashboard_candidat.html
+    """
     conn = get_db()
     row  = conn.execute(
         "SELECT * FROM certificates WHERE id = ? OR blockchain_hash = ?",
@@ -235,7 +471,7 @@ def verify_certificate(cert_id):
 
     cert     = row_to_dict(row)
     is_valid = cert['status'] == 'Vérifié'
-    log_action('VERIFY', cert['id'])
+    log_action('VERIFY', cert['id'], performed_by='public')
 
     return jsonify({
         'valid':    is_valid,
@@ -244,7 +480,9 @@ def verify_certificate(cert_id):
         **cert,
     })
 
+
 @app.route('/certificates/<cert_id>', methods=['DELETE'])
+@role_required("admin")
 def delete_certificate(cert_id):
     conn = get_db()
     row  = conn.execute(
@@ -259,13 +497,17 @@ def delete_certificate(cert_id):
     log_action('DELETE', cert_id)
     return jsonify({'message': 'Certificat supprimé', 'cert_id': cert_id})
 
+
 @app.route('/certificates/<cert_id>/status', methods=['PATCH'])
+@role_required("admin")
 def update_status(cert_id):
-    data       = request.get_json()
+    data       = request.get_json() or {}
     new_status = data.get('status')
     allowed    = ['Vérifié', 'En attente', 'Révoqué']
+
     if new_status not in allowed:
         return jsonify({'error': f'Statut invalide. Valeurs acceptées : {allowed}'}), 400
+
     conn = get_db()
     row  = conn.execute(
         "SELECT id FROM certificates WHERE id = ?", (cert_id,)
@@ -273,16 +515,91 @@ def update_status(cert_id):
     if not row:
         conn.close()
         return jsonify({'error': 'Certificat introuvable'}), 404
-    conn.execute(
-        "UPDATE certificates SET status = ? WHERE id = ?",
-        (new_status, cert_id)
-    )
+
+    conn.execute("UPDATE certificates SET status = ? WHERE id = ?", (new_status, cert_id))
     conn.commit()
     conn.close()
     log_action('STATUS_UPDATE', cert_id, f"Statut → {new_status}")
     return jsonify({'message': 'Statut mis à jour', 'cert_id': cert_id, 'status': new_status})
 
+
+# ═══════════════════════════════════════════════════════════
+#  ROUTES — PDF & EMAIL
+# ═══════════════════════════════════════════════════════════
+
+@app.route('/certificates/<cert_id>/pdf', methods=['GET'])
+def download_certificate_pdf(cert_id):
+    """
+    Génère le PDF du certificat.
+    Route PUBLIQUE — accessible depuis verify-cert.html et dashboard_candidat.html
+    sans nécessiter de login, car l'ID du certificat fait office d'accès.
+    """
+    conn = get_db()
+    row  = conn.execute(
+        "SELECT * FROM certificates WHERE id = ?", (cert_id,)
+    ).fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({'error': 'Certificat introuvable'}), 404
+
+    cert = row_to_dict(row)
+
+    try:
+        from cert_services import generate_certificate_pdf
+        pdf_buffer = generate_certificate_pdf(cert)
+    except ImportError:
+        return jsonify({'error': 'Service PDF non disponible (cert_services.py manquant)'}), 503
+    except Exception as e:
+        return jsonify({'error': f'Erreur PDF : {str(e)}'}), 500
+
+    log_action('DOWNLOAD_PDF', cert_id, f"PDF → {cert['recipient_name']}", performed_by='public')
+
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f"certificat_{cert_id}.pdf"
+    )
+
+
+@app.route('/certificates/<cert_id>/send-email', methods=['POST'])
+@login_required
+def send_email_route(cert_id):
+    """Renvoie le certificat PDF par email — utilisateurs connectés seulement."""
+    conn = get_db()
+    row  = conn.execute(
+        "SELECT * FROM certificates WHERE id = ?", (cert_id,)
+    ).fetchone()
+    conn.close()
+
+    if not row:
+        return jsonify({'error': 'Certificat introuvable'}), 404
+
+    cert = row_to_dict(row)
+
+    try:
+        from cert_services import generate_certificate_pdf, send_certificate_email
+        pdf_buffer = generate_certificate_pdf(cert)
+        success    = send_certificate_email(cert, pdf_buffer)
+    except ImportError:
+        return jsonify({'error': 'Service email non disponible (cert_services.py manquant)'}), 503
+    except Exception as e:
+        return jsonify({'error': f'Erreur : {str(e)}'}), 500
+
+    if success:
+        log_action('EMAIL_SENT', cert_id, f"Email → {cert['email']}")
+        return jsonify({'message': f"Email envoyé à {cert['email']}", 'cert_id': cert_id})
+    else:
+        return jsonify({'error': 'Échec envoi email — vérifiez la config SMTP'}), 500
+
+
+# ═══════════════════════════════════════════════════════════
+#  ROUTES — STATS & AUDIT
+# ═══════════════════════════════════════════════════════════
+
 @app.route('/stats', methods=['GET'])
+@login_required
 def get_stats():
     conn     = get_db()
     total    = conn.execute("SELECT COUNT(*) FROM certificates").fetchone()[0]
@@ -297,80 +614,36 @@ def get_stats():
         'revoked':  revoked,
     })
 
+
 @app.route('/audit', methods=['GET'])
+@role_required("admin")
 def get_audit():
     conn = get_db()
     rows = conn.execute(
-        "SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT 50"
+        "SELECT * FROM audit_log ORDER BY timestamp DESC LIMIT 100"
     ).fetchall()
     conn.close()
     return jsonify({'logs': [row_to_dict(r) for r in rows]})
 
-# ═══════════════════════════════════════════════════════════
-#  NOUVELLES ROUTES — PDF & EMAIL
-# ═══════════════════════════════════════════════════════════
-
-@app.route('/certificates/<cert_id>/pdf', methods=['GET'])
-def download_certificate_pdf(cert_id):
-    """Génère et retourne le certificat en PDF."""
-    conn = get_db()
-    row  = conn.execute(
-        "SELECT * FROM certificates WHERE id = ?", (cert_id,)
-    ).fetchone()
-    conn.close()
-
-    if not row:
-        return jsonify({'error': 'Certificat introuvable'}), 404
-
-    cert = row_to_dict(row)
-
-    try:
-        pdf_buffer = generate_certificate_pdf(cert)
-    except Exception as e:
-        return jsonify({'error': f'Erreur PDF : {str(e)}'}), 500
-
-    log_action('DOWNLOAD_PDF', cert_id, f"PDF → {cert['recipient_name']}")
-
-    return send_file(
-        pdf_buffer,
-        mimetype='application/pdf',
-        as_attachment=True,
-        download_name=f"certificat_{cert_id}.pdf"
-    )
-
-
-@app.route('/certificates/<cert_id>/send-email', methods=['POST'])
-def send_email_route(cert_id):
-    """Envoie le certificat PDF par email au bénéficiaire."""
-    conn = get_db()
-    row  = conn.execute(
-        "SELECT * FROM certificates WHERE id = ?", (cert_id,)
-    ).fetchone()
-    conn.close()
-
-    if not row:
-        return jsonify({'error': 'Certificat introuvable'}), 404
-
-    cert = row_to_dict(row)
-
-    try:
-        pdf_buffer = generate_certificate_pdf(cert)
-        success    = send_certificate_email(cert, pdf_buffer)
-    except Exception as e:
-        return jsonify({'error': f'Erreur : {str(e)}'}), 500
-
-    if success:
-        log_action('EMAIL_SENT', cert_id, f"Email → {cert['email']}")
-        return jsonify({
-            'message': f"Email envoyé à {cert['email']}",
-            'cert_id': cert_id
-        })
-    else:
-        return jsonify({'error': 'Échec envoi email — vérifiez la config SMTP'}), 500
-
 
 # ═══════════════════════════════════════════════════════════
+#  LAUNCH
+# ═══════════════════════════════════════════════════════════
+
 if __name__ == '__main__':
     init_db()
-    print("🚀 SmartCert API démarrée → http://127.0.0.1:5000")
+    ensure_default_users()
+
+    # Vérification logo au démarrage
+    try:
+        from cert_services import _logo
+        if not _logo():
+            print("⚠  logo.png introuvable — placez-le dans shared/logo.png")
+    except ImportError:
+        print("⚠  cert_services.py introuvable — fonctions PDF/Email désactivées")
+
+    print("\n🚀 SmartCert API démarrée → http://127.0.0.1:5000")
+    print("📋 Comptes démo :")
+    print("   admin@smartcert.tn    / admin123")
+    print("   etudiant@smartcert.tn / etudiant123\n")
     app.run(debug=True, host='0.0.0.0', port=5000)

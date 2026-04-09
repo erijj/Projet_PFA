@@ -35,27 +35,12 @@ C_BODY  = colors.HexColor('#1A2A4F')
 C_DARK  = colors.HexColor('#2C3E5A')
 C_BORDER = colors.HexColor('#D4AF37')
 
-"""def _logo():
+def _logo():
     base = os.path.dirname(os.path.abspath(__file__))
     for p in [os.path.join(base,'..','shared','logo.png'),
               os.path.join(base,'shared','logo.png'),
               os.path.join(base,'logo.png')]:
         if os.path.exists(p): return p
-    return None"""
-
-def _logo() -> str | None:
-    base = os.path.dirname(os.path.abspath(__file__))
-    candidates = [
-        os.path.join(base, '..', 'shared', 'logo.png'),
-        os.path.join(base, 'shared', 'logo.png'),
-        os.path.join(base, 'logo.png'),
-    ]
-    for p in candidates:
-        if os.path.exists(p):
-            return p
-    # تحذير مرة واحدة فقط عند التشغيل
-    print("⚠ logo.png introuvable — le PDF utilisera le texte 'SmartCert' à la place.")
-    print(f"  Chemins recherchés : {candidates}")
     return None
 
 def generate_certificate_pdf(cert: dict) -> io.BytesIO:
