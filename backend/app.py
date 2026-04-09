@@ -66,24 +66,34 @@ def init_db():
         );
 
         CREATE TABLE IF NOT EXISTS audit_log (
-            log_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-            action      TEXT NOT NULL,
-            cert_id     TEXT,
+            log_id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            action       TEXT NOT NULL,
+            cert_id      TEXT,
             performed_by TEXT DEFAULT 'admin',
-            timestamp   TEXT DEFAULT (datetime('now')),
-            details     TEXT
+            timestamp    TEXT DEFAULT (datetime('now')),
+            details      TEXT
         );
 
-        CREATE TABLE IF NOT EXISTS users (
+        CREATE TABLE IF NOT EXISTS admins (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
             email         TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
-            role          TEXT NOT NULL DEFAULT 'etudiant'
+            full_name     TEXT,
+            created_at    TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS candidates (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            email         TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            full_name     TEXT,
+            created_at    TEXT DEFAULT (datetime('now'))
         );
 
         CREATE TABLE IF NOT EXISTS sessions (
             session_id  TEXT PRIMARY KEY,
             user_id     INTEGER NOT NULL,
+            user_type   TEXT NOT NULL CHECK (user_type IN ('admin', 'candidate')),
             email       TEXT NOT NULL,
             role        TEXT NOT NULL,
             created_at  TEXT DEFAULT (datetime('now')),
