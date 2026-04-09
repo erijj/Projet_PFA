@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ─── AUTH ─────────────────────────────────────────────────
 async function requireAuthOrRedirect() {
   try {
-    const res  = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
+    const res  = await fetch(`${API_BASE}/certificates`, { credentials: 'include' });
     const data = await res.json();
     if (!data.authenticated) {
       window.location.href = '../frontend/login.html';
