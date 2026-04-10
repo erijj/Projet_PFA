@@ -1,5 +1,6 @@
-'use this link to generate the diagram: https://mermaid.ai/app/dashboard or use a local mermaid live editor to visualize the diagram. Make sure to copy the entire code snippet below and paste it into the editor to see the class diagram for the SmartCert System.'
-'classDiagram'
+<!-- use this link to generate the diagram: https://mermaid.ai/app/dashboard or use a local mermaid live editor to visualize the diagram. Make sure to copy the entire code snippet below and paste it into the editor to see the class diagram for the SmartCert System. -->
+```mermaid
+classDiagram
     class User {
         +String id
         +String email
@@ -39,3 +40,4 @@
     User "1" -- "*" Certificate : "consulte (Etudiant)"
     User "1" -- "*" AuditLog : "génère"
     Certificate "1" -- "*" AuditLog : "tracé par"
+```

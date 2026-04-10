@@ -1,4 +1,5 @@
-'use this link to generate the diagram: https://mermaid.ai/app/dashboard or use a local mermaid live editor to visualize the diagram. Make sure to copy the entire code snippet below and paste it into the editor to see the sequence diagram for the login process of the SmartCert System.'
+<!-- use this link to generate the diagram: https://mermaid.ai/app/dashboard or use a local mermaid live editor to visualize the diagram. Make sure to copy the entire code snippet below and paste it into the editor to see the sequence diagram for the login process of the SmartCert System. -->
+```mermaid
 sequenceDiagram
     participant U as Utilisateur
     participant F as Frontend (login.html)
@@ -18,3 +19,4 @@ sequenceDiagram
         B-->>F: 401 Unauthorized
         F->>U: Affiche message d'erreur
     end
+```
