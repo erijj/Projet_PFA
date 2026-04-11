@@ -4,6 +4,7 @@
    ============================================================ */
 
 // ─── CONFIG ───────────────────────────────────────────────
+const DEV_MODE = true;
 let API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
 
 // ─── STATE ────────────────────────────────────────────────
@@ -32,6 +33,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ─── AUTH ─────────────────────────────────────────────────
 async function requireAuthOrRedirect() {
+  
+  if (DEV_MODE) {
+    currentUser = { email: 'admin@smartcert.tn', role: 'admin' };
+    return;
+  }
+  // ... بقية الكود الأصلي
+
   try {
     const res  = await fetch(`${API_BASE}/certificates`, { credentials: 'include' });
     const data = await res.json();
