@@ -1,0 +1,73 @@
+{
+  "name": "SmartCert — Email Automatique Candidat",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "smartcert-send-email",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "wh-email-001",
+      "name": "Webhook — Nouveau Certificat Émis",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [-700, 0],
+      "webhookId": "smartcert-email-webhook",
+      "notes": "Appelé par Flask après chaque émission de certificat.\nBody attendu: { cert_id, recipient_name, recipient_email, program, institution, issue_date, blockchain_hash }"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Préparer les données du certificat pour l'email\nconst body = $input.first().json.body || $input.first().json;\n\nconst certId        = body.cert_id || body.id || 'CERT-INCONNU';\nconst recipientName = body.recipient_name || 'Candidat';\nconst recipientEmail= body.recipient_email || body.email || '';\nconst program       = body.program || body.degree || 'Certificat';\nconst institution   = body.institution || 'SmartCert University';\nconst issueDate     = body.issue_date\n  ? new Date(body.issue_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })\n  : new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });\nconst blockchainHash= body.blockchain_hash || body.tx_hash || null;\nconst verifyUrl     = `http://localhost:5001/certificates/verify/${certId}`;\n\nif (!recipientEmail) {\n  throw new Error('Email du candidat manquant dans les données reçues.');\n}\n\nreturn [{\n  json: {\n    certId,\n    recipientName,\n    recipientEmail,\n    program,\n    institution,\n    issueDate,\n    blockchainHash,\n    verifyUrl,\n    shortHash: blockchainHash ? blockchainHash.substring(0, 20) + '...' : 'En cours'\n  }\n}];"
+      },
+      "id": "prep-email-001",
+      "name": "Préparer les Données",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-460, 0]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@smartcert.tn",
+        "toEmail": "={{ $json.recipientEmail }}",
+        "subject": "🎓 Votre certificat SmartCert est prêt — {{ $json.certId }}",
+        "emailType": "html",
+        "message": "<!DOCTYPE html>\n<html lang=\"fr\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Votre Certificat SmartCert</title>\n</head>\n<body style=\"margin:0;padding:0;background:#f0f4f8;font-family:'Segoe UI',Arial,sans-serif;\">\n\n  <!-- Wrapper -->\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f0f4f8;padding:40px 20px;\">\n    <tr><td align=\"center\">\n\n      <!-- Card -->\n      <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,29,57,0.12);\">\n\n        <!-- Header -->\n        <tr>\n          <td style=\"background:linear-gradient(135deg,#001D39,#0A4174);padding:36px 40px;text-align:center;\">\n            <div style=\"font-size:48px;margin-bottom:12px;\">🎓</div>\n            <h1 style=\"color:#7BBDE8;font-size:28px;margin:0;font-weight:800;letter-spacing:1px;\">SmartCert</h1>\n            <p style=\"color:#BDD8E9;font-size:13px;margin:6px 0 0;letter-spacing:3px;text-transform:uppercase;\">Certificat Numérique Blockchain</p>\n          </td>\n        </tr>\n\n        <!-- Body -->\n        <tr>\n          <td style=\"padding:40px;\">\n\n            <p style=\"color:#001D39;font-size:16px;margin:0 0 8px;\">Bonjour <strong style=\"color:#0A4174;\">{{ $json.recipientName }}</strong>,</p>\n            <p style=\"color:#49769F;font-size:15px;margin:0 0 28px;line-height:1.6;\">Félicitations ! Votre certificat numérique a été émis avec succès et enregistré de façon permanente sur la <strong>blockchain Ethereum</strong>.</p>\n\n            <!-- Certificate Box -->\n            <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f8fafc;border:2px solid #7BBDE8;border-radius:12px;margin-bottom:28px;\">\n              <tr>\n                <td style=\"padding:24px 28px;\">\n                  <p style=\"color:#001D39;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin:0 0 16px;\">📋 Détails du Certificat</p>\n\n                  <table width=\"100%\" cellpadding=\"4\" cellspacing=\"0\">\n                    <tr>\n                      <td style=\"color:#49769F;font-size:13px;width:140px;\">👤 Bénéficiaire</td>\n                      <td style=\"color:#001D39;font-size:13px;font-weight:600;\">{{ $json.recipientName }}</td>\n                    </tr>\n                    <tr>\n                      <td style=\"color:#49769F;font-size:13px;\">🎓 Programme</td>\n                      <td style=\"color:#001D39;font-size:13px;font-weight:600;\">{{ $json.program }}</td>\n                    </tr>\n                    <tr>\n                      <td style=\"color:#49769F;font-size:13px;\">🏛️ Institution</td>\n                      <td style=\"color:#001D39;font-size:13px;font-weight:600;\">{{ $json.institution }}</td>\n                    </tr>\n                    <tr>\n                      <td style=\"color:#49769F;font-size:13px;\">📅 Date d'émission</td>\n                      <td style=\"color:#001D39;font-size:13px;font-weight:600;\">{{ $json.issueDate }}</td>\n                    </tr>\n                  </table>\n\n                  <!-- Certificate ID -->\n                  <div style=\"background:#001D39;border-radius:8px;padding:14px 18px;margin-top:18px;text-align:center;\">\n                    <p style=\"color:#7BBDE8;font-size:11px;margin:0 0 6px;text-transform:uppercase;letter-spacing:2px;\">🔑 Votre Code Certificat</p>\n                    <p style=\"color:#ffffff;font-size:22px;font-weight:800;margin:0;letter-spacing:3px;font-family:'Courier New',monospace;\">{{ $json.certId }}</p>\n                  </div>\n\n                  <!-- Blockchain info -->\n                  <div style=\"margin-top:14px;padding:12px 14px;background:#f0f9ff;border-left:3px solid #7BBDE8;border-radius:4px;\">\n                    <p style=\"color:#49769F;font-size:11px;margin:0 0 4px;\">⛓️ Hash Blockchain (SHA-256)</p>\n                    <p style=\"color:#0A4174;font-size:11px;margin:0;font-family:monospace;word-break:break-all;\">{{ $json.shortHash }}</p>\n                  </div>\n                </td>\n              </tr>\n            </table>\n\n            <!-- CTA Button -->\n            <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin-bottom:28px;\">\n              <tr>\n                <td align=\"center\">\n                  <a href=\"{{ $json.verifyUrl }}\" style=\"display:inline-block;background:linear-gradient(135deg,#4E8EA2,#7BBDE8);color:#001D39;font-weight:700;font-size:15px;padding:14px 36px;border-radius:10px;text-decoration:none;\">🔍 Vérifier mon Certificat en ligne</a>\n                </td>\n              </tr>\n            </table>\n\n            <!-- How to verify -->\n            <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background:#f8fafc;border-radius:10px;margin-bottom:20px;\">\n              <tr>\n                <td style=\"padding:20px 24px;\">\n                  <p style=\"color:#001D39;font-size:13px;font-weight:700;margin:0 0 12px;\">💡 Comment vérifier votre certificat ?</p>\n                  <p style=\"color:#49769F;font-size:13px;margin:0 0 6px;\">1️⃣ Cliquez sur le bouton ci-dessus <em>ou</em></p>\n                  <p style=\"color:#49769F;font-size:13px;margin:0 0 6px;\">2️⃣ Utilisez notre chatbot SmartCert et entrez votre code : <strong style=\"color:#0A4174;\">{{ $json.certId }}</strong></p>\n                  <p style=\"color:#49769F;font-size:13px;margin:0;\">3️⃣ Scannez le QR Code sur votre certificat PDF</p>\n                </td>\n              </tr>\n            </table>\n\n            <p style=\"color:#6EA2B3;font-size:12px;text-align:center;margin:0;\">Ce certificat est protégé par la technologie blockchain Ethereum et ne peut pas être falsifié.<br>Conservez ce code précieusement.</p>\n          </td>\n        </tr>\n\n        <!-- Footer -->\n        <tr>\n          <td style=\"background:#001D39;padding:20px 40px;text-align:center;\">\n            <p style=\"color:#4E8EA2;font-size:11px;margin:0 0 4px;\">SmartCert — Système sécurisé de gestion de certificats</p>\n            <p style=\"color:#1e3a5f;font-size:10px;margin:0;\">Propulsé par Ethereum Blockchain · Flask · Web3.py</p>\n          </td>\n        </tr>\n\n      </table>\n    </td></tr>\n  </table>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "email-sc-001",
+      "name": "Envoyer Email au Candidat",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [-200, 0],
+      "notes": "Configurez vos identifiants SMTP dans les credentials N8N"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Email envoyé à ' + $('Préparer les Données').first().json.recipientEmail, cert_id: $('Préparer les Données').first().json.certId }) }}",
+        "options": {}
+      },
+      "id": "resp-email-001",
+      "name": "Confirmer l'Envoi",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [80, 0]
+    }
+  ],
+  "connections": {
+    "Webhook — Nouveau Certificat Émis": {
+      "main": [[{ "node": "Préparer les Données", "type": "main", "index": 0 }]]
+    },
+    "Préparer les Données": {
+      "main": [[{ "node": "Envoyer Email au Candidat", "type": "main", "index": 0 }]]
+    },
+    "Envoyer Email au Candidat": {
+      "main": [[{ "node": "Confirmer l'Envoi", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "instanceId": "smartcert-email-workflow" },
+  "tags": [{ "name": "SmartCert" }]
+}

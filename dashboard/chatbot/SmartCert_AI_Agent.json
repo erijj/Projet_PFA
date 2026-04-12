@@ -1,0 +1,106 @@
+{
+  "name": "SmartCert — Chatbot IA (Simple)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "smartcert-chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "wh-sc-001",
+      "name": "Webhook — Reçoit le message",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [-700, 0],
+      "webhookId": "smartcert-chatbot-webhook"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "Tu es l'assistant intelligent de SmartCert, un système de gestion et vérification de certificats numériques sécurisés par la blockchain Ethereum.\n\nTon rôle :\n1. Répondre aux questions fréquentes sur les certificats SmartCert\n2. Guider les utilisateurs pour vérifier un certificat via son identifiant (format CERT-YYYY-XXXXXX)\n3. Expliquer la technologie blockchain de façon simple\n4. Donner les statistiques et informations du système\n\nInformations sur SmartCert :\n- Les certificats sont émis par des institutions éducatives (universités, écoles)\n- Chaque certificat a un identifiant unique au format CERT-2024-XXXXXX\n- Les certificats sont enregistrés sur la blockchain Ethereum (hash SHA-256)\n- La vérification est instantanée et gratuite\n- Les candidats reçoivent un email automatique avec leur code certificat après émission\n- Le PDF du certificat contient un QR code de vérification\n- Statuts possibles : Vérifié, En attente, Révoqué\n\nRègles importantes :\n- Réponds TOUJOURS en français\n- Si l'utilisateur donne un identifiant comme CERT-2024-XXXXX, dis-lui que tu vas le vérifier et explique que la vérification se fait via le système SmartCert\n- Sois concis, clair et professionnel\n- Utilise des emojis pour rendre les réponses plus lisibles\n- Ne jamais inventer des informations sur un certificat spécifique\n\nFormat de réponse (JSON obligatoire) :\n{\n  \"chat_response\": \"Ta réponse ici (texte clair avec emojis, sauts de ligne avec \\n)\",\n  \"intent\": \"greeting|verify|faq|stats|unknown\",\n  \"cert_id\": \"CERT-XXXX-XXXXXX ou null\",\n  \"suggestions\": [\"suggestion1\", \"suggestion2\", \"suggestion3\"]\n}\n\nExemples de suggestions selon le contexte :\n- Pour vérification : [\"🔍 Vérifier un autre certificat\", \"📋 Comment fonctionne la blockchain ?\", \"📧 Contacter le support\"]\n- Pour FAQ : [\"🔍 Vérifier un certificat\", \"📊 Statistiques\", \"⛓️ En savoir plus\"]\n- Pour accueil : [\"🔍 Vérifier un certificat\", \"❓ Comment obtenir un certificat ?\", \"📊 Statistiques\"]"
+        }
+      },
+      "id": "ag-sc-001",
+      "name": "SmartCert AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [-440, 0]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.body.session_id }}"
+      },
+      "id": "mem-sc-001",
+      "name": "Mémoire de Conversation",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [-300, 220]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [-560, 220],
+      "id": "llm-sc-001",
+      "name": "Google Gemini (IA)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Nettoyer et parser la réponse JSON de l'IA\nlet raw = $input.first().json.output || '';\n\n// Supprimer les balises markdown ```json ... ```\nraw = raw.replace(/^```json\\s*/i, '').replace(/^```\\s*/i, '').replace(/\\s*```$/g, '').trim();\n\nlet parsed;\ntry {\n  parsed = JSON.parse(raw);\n} catch(e) {\n  // Si l'IA n'a pas retourné de JSON valide, on construit une réponse de secours\n  parsed = {\n    chat_response: raw || \"Désolé, je n'ai pas pu traiter votre demande. Pouvez-vous reformuler ?\",\n    intent: 'unknown',\n    cert_id: null,\n    suggestions: ['🔍 Vérifier un certificat', '❓ Aide', '📊 Statistiques']\n  };\n}\n\nreturn [{\n  json: {\n    message:     parsed.chat_response || 'Réponse non disponible.',\n    intent:      parsed.intent || 'unknown',\n    cert_id:     parsed.cert_id || null,\n    suggestions: parsed.suggestions || [],\n    timestamp:   new Date().toISOString()\n  }\n}];"
+      },
+      "id": "parse-sc-001",
+      "name": "Parser la Réponse IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-160, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ message: $json.message, suggestions: $json.suggestions, intent: $json.intent, cert_id: $json.cert_id, timestamp: $json.timestamp }) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              { "name": "Content-Type", "value": "application/json" },
+              { "name": "Access-Control-Allow-Origin", "value": "*" },
+              { "name": "Access-Control-Allow-Methods", "value": "POST, OPTIONS" },
+              { "name": "Access-Control-Allow-Headers", "value": "Content-Type" }
+            ]
+          }
+        }
+      },
+      "id": "resp-sc-001",
+      "name": "Envoyer la Réponse",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [100, 0]
+    }
+  ],
+  "connections": {
+    "Webhook — Reçoit le message": {
+      "main": [[{ "node": "SmartCert AI Agent", "type": "main", "index": 0 }]]
+    },
+    "SmartCert AI Agent": {
+      "main": [[{ "node": "Parser la Réponse IA", "type": "main", "index": 0 }]]
+    },
+    "Parser la Réponse IA": {
+      "main": [[{ "node": "Envoyer la Réponse", "type": "main", "index": 0 }]]
+    },
+    "Google Gemini (IA)": {
+      "ai_languageModel": [[{ "node": "SmartCert AI Agent", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "Mémoire de Conversation": {
+      "ai_memory": [[{ "node": "SmartCert AI Agent", "type": "ai_memory", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "instanceId": "smartcert-ai-agent-simple" },
+  "tags": [{ "name": "SmartCert" }]
+}
