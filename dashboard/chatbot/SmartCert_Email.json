@@ -28,7 +28,7 @@
     },
     {
       "parameters": {
-        "fromEmail": "noreply@smartcert.tn",
+        "fromEmail": "arijmahjoub009@gmail.com",
         "toEmail": "={{ $json.recipientEmail }}",
         "subject": "🎓 Votre certificat SmartCert est prêt — {{ $json.certId }}",
         "emailType": "html",
