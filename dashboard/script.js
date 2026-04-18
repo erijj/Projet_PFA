@@ -6,6 +6,7 @@
 // ─── CONFIG ───────────────────────────────────────────────
 const DEV_MODE = true;
 let API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
+let currentUser = null;  // ✅ تعريف المستخدم الحالي
 
 // ─── STATE ────────────────────────────────────────────────
 let allCerts     = [];          // all fetched certificates

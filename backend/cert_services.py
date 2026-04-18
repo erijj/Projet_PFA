@@ -336,30 +336,62 @@ def generate_certificate_pdf(cert: dict) -> io.BytesIO:
 
 
 def send_certificate_email(cert: dict, pdf_bytes: io.BytesIO) -> bool:
-    email = cert.get('email')
-    if not email: return False
+    """
+    Envoie le certificat par email avec PDF en pièce jointe.
+    Retourne True si envoyé (ou mode démo), False sinon.
+    """
+    email = cert.get('email', '').strip().lower()
+    
+    # Validation basique
+    if not email:
+        print("❌ Email vide")
+        return False
+    
+    # Mode démo si SMTP non configuré
     if not SMTP_PASSWORD:
-        print("Mode demo — email simulé")
+        print(f"📧 Mode démo — email simulé pour {email}")
         return True
+    
     try:
+        # Construire le message
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = f"Votre certificat SmartCert — {cert.get('program','')}"
+        msg['Subject'] = f"Votre certificat SmartCert — {cert.get('program','Certificat')}"
         msg['From']    = f"{FROM_NAME} <{SMTP_USER}>"
         msg['To']      = email
+        
+        # Corps HTML
         msg.attach(MIMEText(_email_html(cert), 'html', 'utf-8'))
+        
+        # Pièce jointe PDF
         pdf_bytes.seek(0)
-        part = MIMEBase('application','pdf')
+        part = MIMEBase('application', 'octet-stream')
         part.set_payload(pdf_bytes.read())
         encoders.encode_base64(part)
-        part.add_header('Content-Disposition', f'attachment; filename="certificat_{cert.get("id","smartcert")}.pdf"')
+        cert_id = cert.get('id', 'smartcert')
+        part.add_header(
+            'Content-Disposition',
+            f'attachment; filename="certificat_{cert_id}.pdf"'
+        )
         msg.attach(part)
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as s:
-            s.ehlo(); s.starttls(); s.login(SMTP_USER, SMTP_PASSWORD)
-            s.sendmail(SMTP_USER, email, msg.as_string())
-        print(f"Email envoye -> {email}")
+        
+        # Envoyer via SMTP
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_USER, email, msg.as_string())
+        
+        print(f"✅ Email envoyé → {email}")
         return True
+        
+    except smtplib.SMTPAuthenticationError:
+        print(f"❌ Erreur SMTP auth: vérifiez SMTP_USER et SMTP_PASSWORD")
+        return False
+    except smtplib.SMTPException as e:
+        print(f"❌ Erreur SMTP: {e}")
+        return False
     except Exception as e:
-        print(f"Erreur email: {e}")
+        print(f"❌ Erreur email: {type(e).__name__}: {e}")
         return False
 
 

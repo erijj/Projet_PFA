@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS audit_log (
     cert_id      TEXT,
     performed_by TEXT DEFAULT 'admin',
     timestamp    TEXT DEFAULT (datetime('now')),
+    severity     TEXT DEFAULT 'INFO',
     details      TEXT
 );
 
@@ -45,6 +46,13 @@ CREATE TABLE IF NOT EXISTS sessions (
     role        TEXT NOT NULL,
     created_at  TEXT DEFAULT (datetime('now')),
     expires_at  TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS failed_attempts (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    email       TEXT NOT NULL,
+    attempt_at  TEXT DEFAULT (datetime('now')),
+    ip_address  TEXT
 );
 """
 
