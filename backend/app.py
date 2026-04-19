@@ -588,8 +588,8 @@ def issue_certificate():
         conn.commit()
     except Exception as e:
         conn.close()
-        log_action('ISSUE_ERROR', details=f"Database error: {str(e)}", severity='ERROR')
-        return jsonify({'error': f'Erreur base de données: {str(e)}'}), 500
+        log_action('ISSUE_ERROR', details=f"Database error occurred", severity='ERROR')
+        return jsonify({'error': 'Erreur base de données'}), 500
     conn.close()
 
     cert = {
@@ -766,7 +766,7 @@ def download_certificate_pdf(cert_id):
     except ImportError:
         return jsonify({'error': 'Service PDF non disponible (cert_services.py manquant)'}), 503
     except Exception as e:
-        return jsonify({'error': f'Erreur PDF : {str(e)}'}), 500
+        return jsonify({'error': 'Erreur lors de la génération du PDF'}), 500
 
     log_action('DOWNLOAD_PDF', cert_id, f"PDF → {cert['recipient_name']}", performed_by='public')
 
@@ -800,7 +800,7 @@ def send_email_route(cert_id):
     except ImportError:
         return jsonify({'error': 'Service email non disponible (cert_services.py manquant)'}), 503
     except Exception as e:
-        return jsonify({'error': f'Erreur : {str(e)}'}), 500
+        return jsonify({'error': 'Erreur lors de l\'envoi de l\'email'}), 500
 
     if success:
         log_action('EMAIL_SENT', cert_id, f"Email → {cert['email']}")
@@ -896,4 +896,4 @@ if __name__ == '__main__':
     print("   👨‍🎓 Étudiant:  etudiant@smartcert.tn / etudiant123")
     print("\n" + "="*60 + "\n")
 
-    app.run(debug=True, host='0.0.0.0', port=5000, use_reloader=True)
+    app.run(debug=os.getenv('FLASK_DEBUG', 'false').lower() == 'true', host='0.0.0.0', port=5000, use_reloader=True)
