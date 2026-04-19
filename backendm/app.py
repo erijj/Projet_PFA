@@ -181,8 +181,9 @@ def issue_certificate():
             tx_hash,
         ))
         conn.commit()
-    except Exception:
+    except Exception as e:
         conn.close()
+        print(f"❌ Erreur création certificat: {e}")
         return jsonify({'error': 'Erreur interne lors de la création du certificat'}), 500
     conn.close()
 
@@ -326,7 +327,8 @@ def download_certificate_pdf(cert_id):
 
     try:
         pdf_buffer = generate_certificate_pdf(cert)
-    except Exception:
+    except Exception as e:
+        print(f"❌ Erreur génération PDF ({cert_id}): {e}")
         return jsonify({'error': 'Erreur interne lors de la génération du PDF'}), 500
 
     log_action('DOWNLOAD_PDF', cert_id, f"PDF → {cert['recipient_name']}")
@@ -356,7 +358,8 @@ def send_email_route(cert_id):
     try:
         pdf_buffer = generate_certificate_pdf(cert)
         success    = send_certificate_email(cert, pdf_buffer)
-    except Exception:
+    except Exception as e:
+        print(f"❌ Erreur envoi email ({cert_id}): {e}")
         return jsonify({'error': "Erreur interne lors de l'envoi de l'email"}), 500
 
     if success:
