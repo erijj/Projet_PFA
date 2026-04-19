@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartCert — Émettre un Certificat</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=Cormorant+Garamond:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+  <style>
+    :root{--navy:#001D39;--blue1:#0A4174;--teal:#4E8EA2;--sky:#6EA2B3;--accent:#7BBDE8;--pale:#BDD8E9;--green:#10b981;--red:#ef4444;--gold:#C9A03D;--border:rgba(78,142,162,0.22);--card:rgba(10,65,116,0.45);--grad:linear-gradient(135deg,#0A4174,#4E8EA2)}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{min-height:100vh;font-family:'Syne',sans-serif;background:var(--navy);color:var(--pale)}
+    body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(78,142,162,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(78,142,162,.035) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0}
+    .app{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100vh}
+    .header{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;background:rgba(0,29,57,.94);border-bottom:1px solid var(--border);backdrop-filter:blur(20px)}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand-logo{display:flex;align-items:center;justify-content:center}
+    .brand-logo img.logo-img{width:90px;height:60px;object-fit:contain;display:block;margin:0 auto;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.3));transition:transform .2s ease}
+    .brand-logo img.logo-img:hover{transform:scale(1.05)}
+    .brand-name{font-weight:800;font-size:21px;background:linear-gradient(90deg,var(--accent),var(--pale));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .brand-sub{font-family:'Space Mono',monospace;font-size:9px;color:var(--sky);letter-spacing:2px;text-transform:uppercase}
+    .header-right{display:flex;align-items:center;gap:10px}
+    .pill{display:flex;align-items:center;gap:7px;padding:5px 13px;border:1px solid var(--border);border-radius:20px;font-family:'Space Mono',monospace;font-size:10px;color:var(--sky)}
+    .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2s infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+    .btn-back{display:flex;align-items:center;gap:6px;padding:6px 14px;background:rgba(78,142,162,.08);border:1px solid var(--border);border-radius:8px;color:var(--sky);cursor:pointer;font-family:'Syne',sans-serif;font-size:12px;font-weight:600;transition:all .2s;text-decoration:none}
+    .btn-back:hover{background:rgba(78,142,162,.18);color:var(--accent)}
+    .main{flex:1;display:flex;max-width:1200px;width:100%;margin:0 auto;padding:36px 24px;gap:28px;flex-wrap:wrap}
+    .form-card{flex:1;min-width:300px;background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+    .card-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .card-title-wrap{display:flex;align-items:center;gap:10px}
+    .card-title{font-size:15px;font-weight:700;color:var(--pale)}
+    .card-subtitle{font-size:11px;color:var(--sky);margin-top:2px}
+    .chain-badge{display:flex;align-items:center;gap:6px;padding:4px 11px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.22);border-radius:12px;font-family:'Space Mono',monospace;font-size:10px;color:var(--green)}
+    .card-body{padding:24px;display:flex;flex-direction:column;gap:18px}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .field{display:flex;flex-direction:column;gap:7px}
+    .field label{font-size:11px;color:var(--sky);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+    .field label span{color:var(--red);margin-left:2px}
+    .field input{background:rgba(0,0,0,.28);border:1.5px solid var(--border);border-radius:9px;padding:11px 14px;color:var(--pale);font-family:'Syne',sans-serif;font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s}
+    .field input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(123,189,232,.1)}
+    .field input::placeholder{color:rgba(110,162,179,.55)}
+    .field input.err{border-color:var(--red)}
+    .divider{height:1px;background:var(--border);margin:4px 0}
+    .card-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+    .btn-cancel{padding:10px 20px;background:transparent;border:1px solid var(--border);border-radius:9px;color:var(--sky);cursor:pointer;font-family:'Syne',sans-serif;font-size:13px;transition:all .2s}
+    .btn-cancel:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-submit{display:flex;align-items:center;gap:8px;padding:10px 24px;background:var(--grad);border:none;border-radius:9px;color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 0 18px rgba(78,142,162,.3)}
+    .btn-submit:hover{transform:translateY(-2px);box-shadow:0 4px 24px rgba(78,142,162,.5)}
+    .btn-submit:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    .api-status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;font-size:12px;flex-wrap:wrap}
+    .api-status.err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.22);color:var(--red)}
+    .side{width:420px;flex-shrink:0;display:flex;flex-direction:column;gap:20px}
+    .preview-card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+    .preview-header{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+    .preview-body{padding:20px;background:rgba(0,0,0,.1)}
+    .info-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px}
+    .box-title{font-family:'Space Mono',monospace;font-size:9px;color:var(--sky);text-transform:uppercase;letter-spacing:2px;margin-bottom:14px}
+    .step-item{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start}
+    .step-item:last-child{margin-bottom:0}
+    .step-num{width:26px;height:26px;border-radius:50%;flex-shrink:0;background:rgba(78,142,162,.15);border:1px solid rgba(78,142,162,.3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--accent)}
+    .step-text{font-size:12.5px;color:var(--sky);line-height:1.6}
+    .step-text strong{color:var(--pale)}
+    .tech-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(78,142,162,.1)}
+    .tech-row:last-child{border-bottom:none}
+    .tech-label{font-size:12px;color:var(--sky);flex:1}
+    .tech-tag{font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);background:rgba(123,189,232,.08);padding:2px 8px;border-radius:4px}
+    .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(5px)}
+    .overlay.open{display:flex}
+    .success-modal{background:var(--blue1);border:1px solid rgba(16,185,129,.35);border-radius:20px;padding:36px;max-width:460px;width:92%;text-align:center;animation:fadeUp .4s ease}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    .success-title{font-size:22px;font-weight:800;color:var(--green);margin:16px 0 8px}
+    .success-sub{font-size:13px;color:var(--sky);margin-bottom:22px}
+    .cert-id-display{background:rgba(0,0,0,.4);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:14px;font-family:'Space Mono',monospace;font-size:13px;color:var(--accent);margin-bottom:6px;word-break:break-all}
+    .cert-hash-small{font-family:'Space Mono',monospace;font-size:9px;color:var(--sky);word-break:break-all;margin-bottom:20px;line-height:1.8}
+    .modal-btns{display:flex;gap:10px;justify-content:center}
+    .btn-another{padding:10px 20px;background:transparent;border:1px solid var(--border);border-radius:9px;color:var(--sky);cursor:pointer;font-family:'Syne',sans-serif;font-size:13px}
+    .btn-another:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-go-list{padding:10px 22px;background:var(--grad);border:none;border-radius:9px;color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;cursor:pointer}
+    .btn-go-list:hover{transform:translateY(-2px)}
+    .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .65s linear infinite;display:inline-block;vertical-align:middle}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .toast-box{position:fixed;bottom:22px;right:22px;z-index:999;display:flex;flex-direction:column;gap:8px}
+    .toast{background:rgba(10,65,116,.92);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--pale);box-shadow:0 8px 24px rgba(0,0,0,.5);min-width:230px;animation:slideIn .3s ease}
+    .toast.success{border-left:3px solid var(--green)}
+    .toast.error{border-left:3px solid var(--red)}
+    @keyframes slideIn{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+    @media(max-width:860px){.main{flex-direction:column}.side{width:100%}.field-row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="brand">
+      <div class="brand-logo">
+        <img src="../shared/logo.png" alt="SmartCert" class="logo-img"
+             onerror="this.style.display='none';this.parentElement.innerHTML='<span style=font-weight:700;color:#0A4174;font-size:14px>SC</span>'">
+      </div>
+      <div>
+        <div class="brand-name">SmartCert</div>
+        <div class="brand-sub">Émission de Certificat</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="pill"><div class="dot"></div><span id="chainLabel">Vérification...</span></div>
+      <a href="../dashboard/dashboard-admin.html" class="btn-back">← Dashboard</a>
+    </div>
+  </header>
+
+  <div class="main">
+    <!-- FORMULAIRE -->
+    <div class="form-card">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <span style="font-size:18px">➕</span>
+          <div>
+            <div class="card-title">Nouveau Certificat</div>
+            <div class="card-subtitle">Champs * obligatoires</div>
+          </div>
+        </div>
+        <div class="chain-badge"><div class="dot"></div> Blockchain prête</div>
+      </div>
+      <div class="card-body">
+        <div id="apiStatusBar"></div>
+        <div class="field-row">
+          <div class="field">
+            <label>Nom du bénéficiaire <span>*</span></label>
+            <input type="text" id="f-name" placeholder="ex : Ahmed Ben Ali" oninput="updatePreview()">
+          </div>
+          <div class="field">
+            <label>Adresse email <span>*</span></label>
+            <input type="email" id="f-email" placeholder="ex : ahmed@email.tn">
+          </div>
+        </div>
+        <div class="field">
+          <label>Programme / Diplôme <span>*</span></label>
+          <input type="text" id="f-program" placeholder="ex : Licence en Informatique" oninput="updatePreview()">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Institution</label>
+            <input type="text" id="f-institution" placeholder="ex : Université de Tunis" oninput="updatePreview()">
+          </div>
+          <div class="field">
+            <label>Date d'émission</label>
+            <input type="date" id="f-date" oninput="updatePreview()">
+          </div>
+        </div>
+      </div>
+      <div class="card-footer">
+        <button class="btn-cancel" onclick="resetForm()">✕ Réinitialiser</button>
+        <button class="btn-submit" id="submitBtn" onclick="issueCert()">🔗 Émettre sur Blockchain</button>
+      </div>
+    </div>
+
+    <!-- SIDE -->
+    <div class="side">
+      <!-- APERÇU CERTIFICAT -->
+      <div class="preview-card">
+        <div class="preview-header">
+          <span style="font-size:18px">🎓</span>
+          <div>
+            <div class="card-title">Aperçu du Certificat</div>
+            <div class="card-subtitle">Design identique au PDF généré</div>
+          </div>
+        </div>
+        <div class="preview-body">
+          <div id="certPreviewArea" style="transform:scale(0.62);transform-origin:top center;margin-bottom:-220px"></div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <div class="box-title">⚙️ Processus d'émission</div>
+        <div class="step-item"><div class="step-num">1</div><div class="step-text">Validation des <strong>données</strong> du formulaire</div></div>
+        <div class="step-item"><div class="step-num">2</div><div class="step-text">Génération ID unique <strong>CERT-YYYY-XXXXXX</strong></div></div>
+        <div class="step-item"><div class="step-num">3</div><div class="step-text">Calcul <strong>hash SHA-256</strong></div></div>
+        <div class="step-item"><div class="step-num">4</div><div class="step-text">Enregistrement <strong>blockchain Ethereum</strong></div></div>
+        <div class="step-item"><div class="step-num">5</div><div class="step-text">Sauvegarde <strong>SQLite</strong> + email automatique</div></div>
+      </div>
+
+      <div class="info-box">
+        <div class="box-title">🛠 Stack Technique</div>
+        <div class="tech-row"><span class="tech-label">Backend</span><span class="tech-tag">Flask</span></div>
+        <div class="tech-row"><span class="tech-label">Base de données</span><span class="tech-tag">SQLite</span></div>
+        <div class="tech-row"><span class="tech-label">Blockchain</span><span class="tech-tag">Ethereum</span></div>
+        <div class="tech-row"><span class="tech-label">Web3</span><span class="tech-tag">Web3.py</span></div>
+        <div class="tech-row"><span class="tech-label">Hash</span><span class="tech-tag">SHA-256</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div class="overlay" id="successOverlay">
+  <div class="success-modal">
+    <div style="font-size:52px">🎉</div>
+    <div class="success-title">Certificat Émis !</div>
+    <div class="success-sub">Enregistré avec succès sur la blockchain Ethereum.</div>
+    <div class="cert-id-display" id="resultCertId">—</div>
+    <div class="cert-hash-small" id="resultHash">—</div>
+    <div class="modal-btns">
+      <button class="btn-another" onclick="closeSuccess()">➕ Émettre un autre</button>
+      <button class="btn-go-list" onclick="window.location.href='../dashboard/dashboard-admin.html'">→ Voir les certificats</button>
+    </div>
+  </div>
+</div>
+<div class="toast-box" id="toastBox"></div>
+
+<!-- COMPOSANT CERTIFICAT — identique dans les 2 pages -->
+<!-- Usage: buildCertHTML(data) renvoie le HTML du certificat -->
+<script>
+function buildCertHTML(d) {
+  const name = escH(d.recipient_name || d.name || '—');
+  const prog = escH(d.program || '—');
+  const inst = escH(d.institution || 'SmartCert University');
+  const date = ((d.issue_date || d.date || '—').split('T')[0]);
+  const cid  = escH(d.id || d.cert_id || '—');
+  const stat = escH(d.status || 'Vérifié');
+  const hash = escH(d.blockchain_hash || '');
+  const dateFr = (() => { try { return new Date(date).toLocaleDateString('fr-FR',{year:'numeric',month:'long',day:'numeric'}); } catch { return date; }})();
+
+  return `
+  <div style="background:#FDFAF4;border:3px solid #C9A03D;border-radius:4px;padding:0;position:relative;box-shadow:0 10px 40px rgba(0,0,0,.25);font-family:'Cormorant Garamond','Georgia',serif;max-width:680px;margin:0 auto">
+    <!-- Bordure intérieure -->
+    <div style="position:absolute;inset:6px;border:0.8px solid #C9A03D;pointer-events:none;border-radius:2px"></div>
+    <!-- Coins -->
+    <div style="position:absolute;top:8px;left:8px;width:14px;height:14px;border-top:2px solid #C9A03D;border-left:2px solid #C9A03D"></div>
+    <div style="position:absolute;top:8px;right:8px;width:14px;height:14px;border-top:2px solid #C9A03D;border-right:2px solid #C9A03D"></div>
+    <div style="position:absolute;bottom:8px;left:8px;width:14px;height:14px;border-bottom:2px solid #C9A03D;border-left:2px solid #C9A03D"></div>
+    <div style="position:absolute;bottom:8px;right:8px;width:14px;height:14px;border-bottom:2px solid #C9A03D;border-right:2px solid #C9A03D"></div>
+
+    <!-- HEADER BLEU -->
+    <div style="background:#0A4174;padding:22px 30px 16px;text-align:center;position:relative">
+      <!-- Logo style page web (90x60) -->
+      <div style="display:flex;align-items:center;justify-content:center;margin-bottom:10px">
+        <img src="../shared/logo.png" alt="SmartCert"
+             style="width:90px;height:60px;object-fit:contain;display:block;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.3));transition:transform .2s ease"
+             onerror="this.style.display='none';this.parentElement.innerHTML='<span style=color:white;font-family:Arial;font-weight:700;font-size:18px>SmartCert</span>'">
+      </div>
+      <div style="color:#BDD8E9;font-family:Arial,sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase">${escH(inst)}</div>
+      <!-- Lignes décoratives -->
+      <div style="margin-top:12px;display:flex;align-items:center;gap:6px">
+        <div style="flex:1;height:1.2px;background:#C9A03D"></div>
+        <div style="width:6px;height:6px;background:#C9A03D;transform:rotate(45deg)"></div>
+        <div style="flex:1;height:1.2px;background:#C9A03D"></div>
+      </div>
+    </div>
+
+    <!-- CORPS -->
+    <div style="padding:28px 36px 22px;text-align:center;background:white">
+      <!-- Titre -->
+      <div style="font-size:26px;font-weight:700;color:#1A2A4F;letter-spacing:4px;margin-bottom:4px">CERTIFICAT</div>
+      <div style="font-family:Arial,sans-serif;font-size:9px;letter-spacing:3px;color:#6A8FAA;margin-bottom:20px">DE RÉUSSITE — CERTIFICATE OF ACHIEVEMENT</div>
+
+      <!-- Certifie que -->
+      <div style="font-family:Arial,sans-serif;font-size:11px;color:#4E8EA2;margin-bottom:8px">La présente certifie que</div>
+
+      <!-- Nom -->
+      <div style="font-size:${name.length > 25 ? '28' : '34'}px;font-weight:700;color:#1A2A4F;margin-bottom:4px;font-style:italic">${name}</div>
+      <!-- Ligne dorée sous nom -->
+      <div style="width:${Math.min(name.length*10+40, 320)}px;height:1.5px;background:linear-gradient(90deg,transparent,#C9A03D,transparent);margin:6px auto 16px"></div>
+
+      <div style="font-family:Arial,sans-serif;font-size:11px;color:#6A8FAA;margin-bottom:8px">a complété avec succès le programme</div>
+
+      <!-- Programme -->
+      <div style="font-size:${prog.length > 35 ? '16' : '19'}px;font-weight:700;color:#1A2A4F;margin-bottom:18px">${prog}</div>
+
+      <!-- Séparateur -->
+      <div style="border-top:0.8px solid #D5E8F5;margin:0 20px 18px"></div>
+
+      <!-- 3 cartes info -->
+      <div style="display:flex;justify-content:center;gap:12px;margin-bottom:22px;flex-wrap:wrap">
+        ${[["Date d'émission", dateFr],["Identifiant", cid],["Statut", stat]].map(([lb,vl])=>`
+          <div style="background:#F0F7FF;border:0.8px solid #C0D8F0;border-radius:6px;padding:8px 16px;min-width:130px;text-align:center">
+            <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#4E8EA2;margin-bottom:4px">${lb}</div>
+            <div style="font-family:'Space Mono',monospace,Arial;font-size:${vl.length>14?'9':'11'}px;font-weight:700;color:${lb==='Statut'&&vl==='Vérifié'?'#10b981':'#1A2A4F'}">${vl}</div>
+          </div>`).join('')}
+      </div>
+
+      <!-- Séparateur -->
+      <div style="border-top:0.8px solid #D5E8F5;margin:0 20px 20px"></div>
+
+      <!-- Zone signature + cachet -->
+      <div style="display:flex;align-items:flex-end;justify-content:space-around;gap:20px;flex-wrap:wrap">
+        <!-- Signature -->
+        <div style="text-align:center;min-width:160px">
+          <!-- Tracé SVG signature -->
+          <svg width="140" height="40" viewBox="0 0 140 40" style="display:block;margin:0 auto 4px">
+            <path d="M10,28 C25,14 35,32 55,20 C70,10 75,30 90,18 C105,8 115,22 130,16"
+                  fill="none" stroke="#1A2A4F" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M18,34 C30,24 42,32 62,26 C78,20 88,28 105,24"
+                  fill="none" stroke="#1A2A4F" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          <div style="width:100%;height:1px;background:#1A2A4F;margin-bottom:6px"></div>
+          <div style="font-size:12px;font-weight:700;color:#1A2A4F">Dr. Sarah Martin</div>
+          <div style="font-family:Arial,sans-serif;font-size:9px;color:#6A8FAA">Directrice des Études</div>
+        </div>
+
+        <!-- Cachet SVG -->
+        <div style="text-align:center">
+          <svg width="100" height="100" viewBox="0 0 100 100">
+            <!-- Cercle extérieur -->
+            <circle cx="50" cy="50" r="47" fill="#EEF5FB" stroke="#0A4174" stroke-width="2"/>
+            <!-- Cercle pointillé -->
+            <circle cx="50" cy="50" r="42" fill="none" stroke="#7BBDE8" stroke-width="0.6" stroke-dasharray="2,3"/>
+            <!-- Cercle intérieur -->
+            <circle cx="50" cy="50" r="35" fill="none" stroke="#4E8EA2" stroke-width="1"/>
+            <!-- Texte haut -->
+            <text x="50" y="18" text-anchor="middle" font-family="Arial" font-size="6.5" font-weight="700" fill="#0A4174">SMARTCERT UNIVERSITY</text>
+            <!-- Texte bas -->
+            <text x="50" y="84" text-anchor="middle" font-family="Arial" font-size="5.5" fill="#4E8EA2">OFFICIEL · BLOCKCHAIN</text>
+            <!-- Étoiles -->
+            <text x="15" y="53" text-anchor="middle" font-size="9" fill="#C9A03D">*</text>
+            <text x="85" y="53" text-anchor="middle" font-size="9" fill="#C9A03D">*</text>
+            <!-- Zone logo central -->
+            <image href="../shared/logo.png" x="32" y="30" width="36" height="24" preserveAspectRatio="xMidYMid meet"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Note auth -->
+      <div style="font-family:Arial,sans-serif;font-size:8px;color:#8AACBE;margin-top:14px">
+        Ce certificat est authentifié par la blockchain Ethereum et ne peut être falsifié.
+      </div>
+    </div>
+
+    <!-- FOOTER BLOCKCHAIN -->
+    <div style="background:#0A4174;padding:10px 20px;border-radius:0 0 2px 2px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+        <div>
+          <span style="font-family:Arial,sans-serif;font-size:9px;color:#7BBDE8;font-weight:700">SHA-256: </span>
+          <span style="font-family:monospace;font-size:8px;color:#BDD8E9">${hash ? hash.substring(0,50)+'...' : 'Non disponible'}</span>
+        </div>
+        <div style="font-family:Arial,sans-serif;font-size:8px;color:#7BBDE8">ID: ${cid}</div>
+      </div>
+    </div>
+  </div>`;
+}
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+</script>
+<script>
+const POSSIBLE = ['http://127.0.0.1:5000','http://localhost:5000'];
+let API = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
+
+async function findBackend() {
+  for (const u of POSSIBLE) {
+    try { const r=await fetch(u+'/chain/status',{signal:AbortSignal.timeout(2000)}); if(r.ok){API=u;localStorage.setItem('smartcert_api',u);return true;} } catch {}
+  }
+  return false;
+}
+
+async function checkBackend() {
+  const bar = document.getElementById('apiStatusBar');
+  const lbl = document.getElementById('chainLabel');
+  const ok = await findBackend();
+  if (ok) { bar.innerHTML=''; lbl.textContent='Ethereum Testnet'; }
+  else {
+    lbl.textContent = 'Non connecté';
+    bar.innerHTML = `<div class="api-status err">⚠ Backend non disponible — lancez <code style="background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px">python app.py</code> <button onclick="checkBackend()" style="margin-left:8px;background:var(--red);border:none;color:white;padding:3px 10px;border-radius:5px;cursor:pointer;font-size:11px">🔄 Réessayer</button></div>`;
+  }
+}
+
+function updatePreview() {
+  const name = document.getElementById('f-name').value.trim() || '—';
+  const prog = document.getElementById('f-program').value.trim() || '—';
+  const inst = document.getElementById('f-institution').value.trim() || 'SmartCert University';
+  const date = document.getElementById('f-date').value || new Date().toISOString().split('T')[0];
+  const area = document.getElementById('certPreviewArea');
+  area.innerHTML = buildCertHTML({
+    recipient_name: name, program: prog,
+    institution: inst, issue_date: date,
+    id: 'CERT-2026-XXXX', status: 'Vérifié',
+    blockchain_hash: ''
+  });
+}
+
+window.addEventListener('load', async () => {
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  updatePreview();
+  await checkBackend();
+});
+
+async function issueCert() {
+  const name  = document.getElementById('f-name').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const prog  = document.getElementById('f-program').value.trim();
+  const inst  = document.getElementById('f-institution').value.trim();
+  const date  = document.getElementById('f-date').value;
+  let ok = true;
+  [['f-name',name],['f-email',email],['f-program',prog]].forEach(([id,val])=>{
+    const el=document.getElementById(id);
+    if(!val){el.classList.add('err');ok=false;}else el.classList.remove('err');
+  });
+  if (!ok) { toast('⚠ Remplissez les champs obligatoires (*)','error'); return; }
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Enregistrement…';
+  try {
+    const res=await fetch(`${API}/certificates`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({recipient_name:name,email,program:prog,institution:inst||'SmartCert University',issue_date:date})});
+    const data=await res.json();
+    if (res.ok) {
+      document.getElementById('resultCertId').textContent=data.cert_id||'—';
+      document.getElementById('resultHash').textContent='Hash: '+(data.blockchain_hash||'—')+'\nTx: '+(data.tx_hash||'—');
+      document.getElementById('successOverlay').classList.add('open');
+      toast('✅ Certificat émis avec succès !','success');
+    } else toast(`❌ ${data.error||'Erreur serveur'}`,'error');
+  } catch { toast('❌ Backend inaccessible — lancez : python app.py','error'); checkBackend(); }
+  btn.disabled=false; btn.innerHTML='🔗 Émettre sur Blockchain';
+}
+
+function resetForm(){
+  ['f-name','f-email','f-program','f-institution'].forEach(id=>{document.getElementById(id).value='';document.getElementById(id).classList.remove('err');});
+  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  updatePreview();
+}
+function closeSuccess(){document.getElementById('successOverlay').classList.remove('open');resetForm();}
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function toast(msg,type='success'){const box=document.getElementById('toastBox');const el=document.createElement('div');el.className=`toast ${type}`;el.textContent=msg;box.appendChild(el);setTimeout(()=>{el.style.transition='opacity .4s,transform .4s';el.style.opacity='0';el.style.transform='translateX(110%)';setTimeout(()=>el.remove(),400)},3200)}
+</script>
+</body>
+</html>

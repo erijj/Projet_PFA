@@ -1,0 +1,30 @@
+---
+config:
+  layout: dagre
+---
+flowchart LR
+ subgraph subGraph0["SmartCert System"]
+        UC1@{ label: "S'authentifier" }
+        UC2["Se déconnecter"]
+        UC3["Émettre un certificat"]
+        UC7["Voir le Dashboard / Statistiques"]
+        UC9["Consulter un certificat"]
+        UC10@{ label: "Vérifier l'authenticité d'un certificat" }
+        UC11@{ label: "Consulter les logs d'audit" }
+        UC12["Voir le statut blockchain"]
+        UC13["Utiliser le chatbot"]
+        UC15["Écrire code (ID)"]
+        UC16["prévisualiser le certificat"]
+  end
+    Admin(["👤 Administrateur"]) --> UC1 & UC2 & UC3 & UC7 & UC11 & UC12 & UC16
+    Candidat(["👤 candidat"]) --> UC1 & UC2 & UC9 & UC13 & UC15
+    Visiteur(["👤 Public / Vérificateur"]) --> UC10
+    UC9 --> n1["Untitled Node"]
+    UC1 --> n2["include tous sauf se déconnecter"]
+
+    UC1@{ shape: rect}
+    UC10@{ shape: rect}
+    UC11@{ shape: rect}
+    classDef Pine stroke-width:1px, stroke-dasharray:none, stroke:#254336, fill:#27654A, color:#FFFFFF
+    style UC9 fill:#D50000
+    style UC15 fill:#D50000
