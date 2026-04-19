@@ -4,7 +4,9 @@
    ============================================================ */
 
 // ─── CONFIG ───────────────────────────────────────────────
+const DEV_MODE = false;  // set to true to bypass auth during development
 let API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
+let currentUser = null;  // ✅ تعريف المستخدم الحالي
 
 // ─── STATE ────────────────────────────────────────────────
 let allCerts     = [];          // all fetched certificates
@@ -32,8 +34,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ─── AUTH ─────────────────────────────────────────────────
 async function requireAuthOrRedirect() {
+  
+  if (DEV_MODE) {
+    currentUser = { email: 'admin@smartcert.tn', role: 'admin' };
+    return;
+  }
+  // ... بقية الكود الأصلي
+
   try {
-    const res  = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
+    const res  = await fetch(`${API_BASE}/certificates`, { credentials: 'include' });
     const data = await res.json();
     if (!data.authenticated) {
       window.location.href = '../frontend/login.html';
