@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant U as Utilisateur / Vérificateur
+    participant F as Frontend
+    participant B as Backend (Flask)
+    participant D as SQLite DB
+
+    U->>F: Saisit ID 
+    F->>B: GET /certificates/verify/{id_or_hash}
+    B->>D: SELECT * FROM certificates WHERE id=? OR blockchain_hash=?
+    D-->>B: Résultat
+
+    alt Certificat trouvé
+        B-->>F: 200 OK {certificate, status}
+        F->>U: Affiche le nom d'Étudiant
+    else Certificat introuvable
+        B-->>F: 404 Not Found
+        F->>U: "Certificat introuvable"
+    end

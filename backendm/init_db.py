@@ -95,7 +95,7 @@ SAMPLE_CERTS = [ #حذفت شهادتين (lina,omar)
 
 # توليد ID فريد — CERT-2026-XXXXXX
 
-def generate_cert_id() -> str: #  'index' n'est pas utilisé, peut ètre supprimé .
+def generate_cert_id() -> str: #  'index' n'est pas utilisé, peut être supprimé .
     year  = datetime.now().year
     short = str(uuid.uuid4()).upper()[:6]
     return f"CERT-{year}-{short}"
