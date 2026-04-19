@@ -1,0 +1,89 @@
+\documentclass{article}
+\usepackage[french]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{enumitem}
+\setlist[itemize]{label=\textbullet, leftmargin=*}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\title{Système sécurisé de gestion et de vérification de certificats basé sur la blockchain}
+\author{}
+\date{February 7, 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Titre du Projet}
+SmartCert
+\section{Problématique \& Contexte}
+\begin{itemize}
+    \item \textbf{Besoin réel :} Les institutions éducatives souhaitent disposer d'un système fiable et sécurisé pour émettre et vérifier des certificats numériques (diplômes, attestations de formation) sans recourir à des démarches administratives lourdes et sujettes aux erreurs ou à la fraude.
+    \item \textbf{Public cible :} établissements d'enseignement, étudiants et personnel administratif chargé de l'émission des certificats.
+    \item \textbf{Solution numérique :} L'utilisation de la technologie blockchain permet de garantir l'authenticité, la traçabilité et l'immuabilité des certificats, offrant une vérification instantanée par tout tiers sans dépendance aux services administratifs.
+    \item \textbf{Exemples concrets :} Réduction des délais de vérification, élimination des risques de falsification, simplification des échanges entre institutions et bénéficiaires.
+\end{itemize}
+
+\section{Objectifs du Projet}
+\begin{itemize}
+    \item \textbf{Buts principaux :} Développer une application web permettant l'émission sécurisée de certificats numériques et leur vérification instantanée via la blockchain, avec un processus complet d'authentification et de stockage.
+    \item \textbf{Changements apportés :} Suppression de la dépendance aux processus administratifs manuels, réduction des risques de fraude, accélération des vérifications et amélioration de l'expérience      utilisateur.
+    \item \textbf{Différences avec les solutions existantes :} Utilisation de la blockchain pour l'immuabilité des données (contrairement aux systèmes centralisés), avec un mécanisme de vérification transparent et accessible à tout tiers.
+    \item \textbf{Valeur ajoutée :} Solution pratique, technique et pédagogique qui apporte une valeur réelle aux institutions éducatives.
+\end{itemize}
+
+\section{Description de la Solution \& Valeur Ajoutée}
+\begin{itemize}
+    \item \textbf{Idée globale :} Création d'une application web intégrant une blockchain (Ethereum Testnet) pour l'émission et la vérification de certificats numériques sécurisés, avec une interface intuitive accessible via navigateur.
+    \item \textbf{Fonctionnalités principales :} 
+    \begin{itemize}
+        \item Émission de certificats avec identifiant unique et cachet numérique
+        \item Vérification en temps réel via un lien de vérification
+        \item Gestion des certificats via une interface web sécurisée
+        \item Enregistrement automatique sur la blockchain via MetaMask
+    \end{itemize}
+    \item \textbf{Fonctionnalités secondaires :} 
+    \begin{itemize}
+        \item Téléchargement du certificat au format PDF
+        \item Envoi d'email automatique au bénéficiaire
+    \end{itemize}
+    \item \textbf{Innovation :} Combinaison de technologies web (Flask) et blockchain (Web3.py) pour une solution robuste, sécurisée et évolutive .
+    \item \textbf{Technologies utilisées :} 
+    \begin{itemize}
+        \item Frontend: HTML + CSS + JavaScript...
+        \item Backend: Python + Flask
+        \item Base de données: SQLite
+        \item Blockchain: Ethereum Testnet + Web3.py
+        \item Portefeuille: MetaMask
+
+    \end{itemize}
+\end{itemize}
+\section{Intégration d’un Chatbot via n8n}
+
+Afin d’améliorer l’interaction avec les utilisateurs et d’automatiser certaines tâches administratives, le projet intègre un chatbot intelligent basé sur la technologie n8n.
+
+\begin{itemize}
+    \item \textbf{Rôle du chatbot :}
+    \begin{itemize}
+        \item Assistance automatisée aux utilisateurs (étudiants et administration)
+        \item Réponses aux questions fréquentes sur les certificats
+        \item Vérification guidée d’un certificat via son identifiant
+    \end{itemize}
+
+    \item \textbf{Fonctionnement technique :}
+    \begin{itemize}
+        \item Le chatbot est implémenté à l’aide de workflows n8n
+        \item Communication avec l’application Flask via des API REST
+
+    \end{itemize}
+
+    \item \textbf{Apport au projet :}
+    \begin{itemize}
+        \item Réduction de la charge du support administratif
+        \item Accessibilité 24/7 pour les utilisateurs
+        \item Amélioration de l’expérience utilisateur
+        \item Automatisation fiable des processus liés aux certificats
+    \end{itemize}
+\end{itemize}
+
+\end{document}
