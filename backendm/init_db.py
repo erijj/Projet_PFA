@@ -1,6 +1,6 @@
 """
 SmartCert — init_db.py
-initialiser la base de données SQLite certificates.db
+Initialise la base de données SQLite certificates.db
 """
 
 import sqlite3
@@ -9,19 +9,11 @@ import json
 import os
 import uuid
 from datetime import datetime
-"""الأصلي — فيه زيادة imports
-from datetime import datetime, timedelta  # timedelta ما تستعملتش
-import random                            # ما تستعملتش 
-"""
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATABASE = os.path.join(BASE_DIR, 'certificates.db')
 
-# المسار — نفس مجلد init_db.py
-
-DATABASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'certificates.db') # غيرت 'database.db' إلى 'certificates.db' لتتوافق مع اسم قاعدة البيانات المستخدمة في المشروع.
-
-
-# SCHEMA — جدولين
-
+# ─── SCHEMA ───────────────────────────────────────────────
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS certificates (
     id               TEXT PRIMARY KEY,
@@ -42,14 +34,36 @@ CREATE TABLE IF NOT EXISTS audit_log (
     cert_id      TEXT,
     performed_by TEXT DEFAULT 'admin',
     timestamp    TEXT DEFAULT (datetime('now')),
+    severity     TEXT DEFAULT 'INFO',
     details      TEXT
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    email         TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role          TEXT NOT NULL DEFAULT 'etudiant'
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    session_id  TEXT PRIMARY KEY,
+    user_id     INTEGER NOT NULL,
+    email       TEXT NOT NULL,
+    role        TEXT NOT NULL,
+    created_at  TEXT DEFAULT (datetime('now')),
+    expires_at  TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS failed_attempts (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    email       TEXT NOT NULL,
+    attempt_at  TEXT DEFAULT (datetime('now')),
+    ip_address  TEXT
 );
 """
 
-
-# بيانات تجريبية — تتوافق مع الـ Dashboard
-
-SAMPLE_CERTS = [ #حذفت شهادتين (lina,omar)
+# ─── DONNÉES DE TEST ──────────────────────────────────────
+SAMPLE_CERTS = [
     {
         'recipient_name': 'Ahmed Ben Ali',
         'email':          'ahmed.benali@email.tn',
@@ -93,44 +107,54 @@ SAMPLE_CERTS = [ #حذفت شهادتين (lina,omar)
 ]
 
 
-# توليد ID فريد — CERT-2026-XXXXXX
+# ─── FONCTIONS UTILITAIRES ────────────────────────────────
 
-def generate_cert_id() -> str: #  'index' n'est pas utilisé, peut être supprimé .
+def generate_cert_id() -> str:
+    """Génère un identifiant unique CERT-YYYY-XXXXXX."""
     year  = datetime.now().year
     short = str(uuid.uuid4()).upper()[:6]
     return f"CERT-{year}-{short}"
 
 
-# توليد blockchain_hash من بيانات الشهادة
-
-def compute_blockchain_hash(data: dict) -> str: # le nom de la fonction est changé de 'compute_hash' en 'compute_blockchain_hash' pour être plus explicite et éviter toute confusion avec d'autres types de hash qui pourraient être utilisés dans le projet.
+def compute_hash(data: dict) -> str:
+    """Calcule le hash SHA-256 des données du certificat."""
     payload = json.dumps(data, sort_keys=True, ensure_ascii=False)
     return "0x" + hashlib.sha256(payload.encode()).hexdigest()
 
 
-# توليد tx_hash وهمي (قبل ربط Ethereum حقيقي)
-
 def fake_tx_hash(blockchain_hash: str) -> str:
+    """Génère un tx_hash simulé (avant connexion Ethereum réelle)."""
     return "0xtx_" + hashlib.md5(blockchain_hash.encode()).hexdigest()
 
 
-# الفونكسيون الرئيسية
-
+# ─── FONCTION PRINCIPALE ──────────────────────────────────
 def init_db():
     print(f"📁 Base de données : {DATABASE}")
     conn   = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
-    # إنشاء الجدولين
+    # Créer les tables
     cursor.executescript(SCHEMA)
-    print("✅ Tables créées (certificates + audit_log)")
+    print("✅ Tables créées (certificates + audit_log + users + sessions)")
 
-    # إدخال البيانات التجريبية
+    # Comptes démo
+    from werkzeug.security import generate_password_hash
+    defaults = [
+        ("admin@smartcert.tn",    "admin123",    "admin"),
+        ("etudiant@smartcert.tn", "etudiant123", "etudiant"),
+    ]
+    for email, pw, role in defaults:
+        pw_hash = generate_password_hash(pw)
+        cursor.execute(
+            "INSERT OR IGNORE INTO users (email, password_hash, role) VALUES (?, ?, ?)",
+            (email.lower(), pw_hash, role),
+        )
+    print("✅ Comptes démo créés : admin@smartcert.tn / etudiant@smartcert.tn")
+
+    # Insérer les certificats de test
     inserted = 0
     for cert in SAMPLE_CERTS:
         cert_id = generate_cert_id()
-
-        # البيانات اللي يتحسب منها الـ hash
         hash_payload = {
             'id':             cert_id,
             'recipient_name': cert['recipient_name'],
@@ -139,8 +163,7 @@ def init_db():
             'institution':    cert['institution'],
             'issue_date':     cert['issue_date'],
         }
-
-        blockchain_hash = compute_blockchain_hash(hash_payload)
+        blockchain_hash = compute_hash(hash_payload)
         tx_hash         = fake_tx_hash(blockchain_hash)
 
         try:
@@ -163,17 +186,10 @@ def init_db():
             inserted += 1
             print(f"  ➕ {cert_id} — {cert['recipient_name']} [{cert['status']}]")
 
-            # سجل في audit_log
-            cursor.execute("""
-                INSERT INTO audit_log (action, cert_id, details)
-                VALUES (?, ?, ?)
-            """, ('INIT', cert_id, f"Certificat créé pour {cert['recipient_name']}"))
-            
-            #الكود الاصلي:cursor.execute("""
-    # INSERT INTO audit_log (action, cert_id, details)
-    # VALUES (?, ?, ?)
-# """, ('INIT', cert_id, f"Certificat créé pour {cert['recipient_name']}"))
-
+            cursor.execute(
+                "INSERT INTO audit_log (action, cert_id, details) VALUES (?, ?, ?)",
+                ('INIT', cert_id, f"Certificat créé pour {cert['recipient_name']}")
+            )
         except Exception as e:
             print(f"  ⚠ Erreur : {e}")
 

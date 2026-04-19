@@ -1,101 +1,60 @@
 /**
- * SmartCert — auth.js
- * Module d'authentification frontend
+ * SmartCert — auth.js (VERSION COOKIE)
+ * Compatible avec app.py — sessions HttpOnly Cookie
  *
- * Responsabilités :
- *   • Login / Logout via Flask API
- *   • Stockage sécurisé du JWT dans sessionStorage
- *   • Gestion de l'expiration de session
- *   • Validation du token côté serveur
+ * DIFFÉRENCE AVEC L'ANCIENNE VERSION :
+ *   ✗ Avant : JWT Bearer token dans sessionStorage
+ *   ✓ Maintenant : HttpOnly Cookie géré automatiquement par le navigateur
  *
  * Utilisation :
- *   <script src="auth.js"></script>
- *   Auth.login(email, pw).then(...)
- *   Auth.isAuthenticated()  →  boolean
- *   Auth.getUser()          →  { email, role, name }
- *   Auth.authHeaders()      →  { Authorization: 'Bearer ...' }
+ *   Auth.isAuthenticated()        → Promise<boolean>
+ *   Auth.getUser()                → { email, role } depuis sessionStorage
+ *   Auth.logout()                 → supprime session serveur + cookie
+ *   Auth.apiFetch(url, options)   → fetch avec credentials: 'include'
  */
 
 const Auth = (() => {
 
-  // ─── CONFIG ──────────────────────────────────────────────
-  const API_BASE    = 'http://127.0.0.1:5000';
-  const TOKEN_KEY   = 'smartcert_token';
-  const USER_KEY    = 'smartcert_user';
-  const EXPIRY_KEY  = 'smartcert_expiry';
+  const API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
+  const USER_KEY = 'smartcert_user';
 
-  // Durée de vie minimum restante avant de forcer le renouvellement (5 min)
-  const MIN_TTL_MS  = 5 * 60 * 1000;
-
-  // ─── PRIVATE HELPERS ─────────────────────────────────────
-  function _store(token, user, expiresIn) {
-    const expiry = Date.now() + (expiresIn * 1000) - MIN_TTL_MS;
-    sessionStorage.setItem(TOKEN_KEY,  token);
-    sessionStorage.setItem(USER_KEY,   JSON.stringify(user));
-    sessionStorage.setItem(EXPIRY_KEY, expiry.toString());
+  // ─── PRIVATE ──────────────────────────────────────────
+  function _saveUser(user) {
+    sessionStorage.setItem(USER_KEY, JSON.stringify(user));
   }
 
-  function _clear() {
-    [TOKEN_KEY, USER_KEY, EXPIRY_KEY].forEach(k => sessionStorage.removeItem(k));
+  function _clearUser() {
+    sessionStorage.removeItem(USER_KEY);
   }
 
-  function _isExpired() {
-    const expiry = parseInt(sessionStorage.getItem(EXPIRY_KEY) || '0');
-    return Date.now() > expiry;
-  }
-
-  // ─── PUBLIC API ──────────────────────────────────────────
+  // ─── PUBLIC ───────────────────────────────────────────
   return {
 
     /**
-     * Authentifie l'utilisateur.
-     * @param {string} email
-     * @param {string} password
-     * @returns {Promise<{token, user, expires_in}>}
-     * @throws {Error} si les identifiants sont incorrects ou réseau KO
+     * Vérifie si l'utilisateur est connecté via le cookie.
+     * Interroge /auth/me à chaque appel.
+     * @returns {Promise<boolean>}
      */
-    async login(email, password) {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur de connexion');
-
-      _store(data.token, data.user, data.expires_in);
-      return data;
-    },
-
-    /**
-     * Déconnecte l'utilisateur (appel API + nettoyage local).
-     * Redirige vers login.html.
-     */
-    async logout() {
-      const token = this.getToken();
-      if (token) {
-        try {
-          await fetch(`${API_BASE}/auth/logout`, {
-            method:  'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-          });
-        } catch (_) { /* réseau KO — on continue quand même */ }
+    async isAuthenticated() {
+      try {
+        const res  = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
+        const data = await res.json();
+        if (data.authenticated && data.user) {
+          _saveUser(data.user);
+          return true;
+        }
+        _clearUser();
+        return false;
+      } catch (_) {
+        // Serveur injoignable — refuser l'accès
+        return false;
       }
-      _clear();
-      window.location.href = 'login.html';
     },
 
     /**
-     * Retourne le JWT stocké, ou null si absent / expiré.
-     */
-    getToken() {
-      if (_isExpired()) { _clear(); return null; }
-      return sessionStorage.getItem(TOKEN_KEY);
-    },
-
-    /**
-     * Retourne l'objet user { email, role, name } ou null.
+     * Retourne les infos utilisateur depuis sessionStorage.
+     * (Données mises à jour lors du dernier isAuthenticated())
+     * @returns {{ id, email, role } | null}
      */
     getUser() {
       const raw = sessionStorage.getItem(USER_KEY);
@@ -103,74 +62,58 @@ const Auth = (() => {
     },
 
     /**
-     * Retourne le rôle ('admin' | 'etudiant') ou null.
+     * Retourne le rôle de l'utilisateur.
+     * @returns {'admin' | 'etudiant' | null}
      */
     getRole() {
       return this.getUser()?.role ?? null;
     },
 
     /**
-     * true si un token valide est présent en local.
+     * Déconnecte l'utilisateur côté serveur et supprime le cookie.
+     * Redirige vers login.html.
      */
-    isAuthenticated() {
-      return !!this.getToken();
-    },
-
-    /**
-     * Valide le token auprès du serveur.
-     * Fallback : accepte le token local si le serveur est injoignable.
-     * @returns {Promise<boolean>}
-     */
-    async verifyWithServer() {
-      const token = this.getToken();
-      if (!token) return false;
-
+    async logout() {
       try {
-        const res = await fetch(`${API_BASE}/auth/verify-token`, {
-          headers: { 'Authorization': `Bearer ${token}` },
+        await fetch(`${API_BASE}/auth/logout`, {
+          method:      'POST',
+          credentials: 'include',
         });
-        if (res.status === 401) { _clear(); return false; }
-        return res.ok;
-      } catch (_) {
-        // Réseau injoignable : on accepte le token local (mode offline)
-        console.warn('SmartCert Auth: serveur injoignable, validation locale uniquement');
-        return this.isAuthenticated();
-      }
+      } catch (_) { /* réseau KO — continuer */ }
+      _clearUser();
+      window.location.href = '../auth+login-admin/login.html?reason=logged_out';
     },
 
     /**
-     * Retourne les headers HTTP avec Bearer token pour fetch().
-     * @param {object} extra - headers supplémentaires
-     * @returns {object}
-     */
-    authHeaders(extra = {}) {
-      return {
-        'Content-Type':  'application/json',
-        'Authorization': `Bearer ${this.getToken()}`,
-        ...extra,
-      };
-    },
-
-    /**
-     * Effectue un fetch() authentifié.
-     * Gère automatiquement le 401 (redirige vers login).
-     * @param {string} url
+     * Effectue un fetch() avec credentials: 'include'.
+     * Gère automatiquement le 401 → redirection login.
+     * @param {string} url  - chemin relatif ex: '/certificates'
      * @param {RequestInit} options
      */
     async apiFetch(url, options = {}) {
-      const headers = { ...this.authHeaders(), ...(options.headers || {}) };
-      const res = await fetch(`${API_BASE}${url}`, { ...options, headers });
+      const res = await fetch(`${API_BASE}${url}`, {
+        ...options,
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(options.headers || {}),
+        },
+      });
 
       if (res.status === 401) {
-        _clear();
-        window.location.href = `login.html?reason=session_expired&return=${encodeURIComponent(window.location.pathname)}`;
+        _clearUser();
+        window.location.href = '../auth+login-admin/login.html?reason=session_expired';
         throw new Error('Session expirée');
+      }
+      if (res.status === 403) {
+        window.location.href = '../auth+login-admin/login.html?reason=unauthorized';
+        throw new Error('Accès refusé');
       }
       return res;
     },
 
   };
+
 })();
 
-// Expose globalement
 window.Auth = Auth;
