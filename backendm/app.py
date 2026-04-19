@@ -376,4 +376,4 @@ def send_email_route(cert_id):
 if __name__ == '__main__':
     init_db()
     print("🚀 SmartCert API démarrée → http://127.0.0.1:5000")
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='127.0.0.1', port=5000)
