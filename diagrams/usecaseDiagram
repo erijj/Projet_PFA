@@ -14,7 +14,7 @@ flowchart LR
         UC12["Voir le statut blockchain"]
         UC13["Utiliser le chatbot"]
         UC15["Écrire code (ID)"]
-        UC16["prévisualiser le certificat"]
+        UC16["Prévisualiser le certificat"]
   end
     Admin(["👤 Administrateur"]) --> UC1 & UC2 & UC3 & UC7 & UC11 & UC12 & UC16
     Candidat(["👤 candidat"]) --> UC1 & UC2 & UC9 & UC13 & UC15

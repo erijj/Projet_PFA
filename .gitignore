@@ -1,3 +1,7 @@
 .DS_Store
 backend/database.db
 backend/__pycache__/
+
+auth+login-admin/__pycache__/
+auth+login-admin copy/__pycache__/
+*.pyc
