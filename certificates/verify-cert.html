@@ -190,7 +190,7 @@
         document.getElementById('shareUrl').value = url;
       }
     } catch {
-      res.innerHTML = `<div class="cert-invalid-card"><div class="invalid-icon">🔌</div><div class="invalid-title">Serveur non disponible</div><div class="invalid-msg">Le backend Flask n'est pas accessible sur <strong style="color:var(--accent)">${API_BASE}</strong>.<br>Démarrez le serveur puis réessayez.</div></div>`;
+      res.innerHTML = `<div class="cert-invalid-card"><div class="invalid-icon">🔌</div><div class="invalid-title">Serveur non disponible</div><div class="invalid-msg">Le backend Flask n'est pas accessible sur <strong style="color:var(--accent)">${escHtml(API_BASE)}</strong>.<br>Démarrez le serveur puis réessayez.</div></div>`;
     }
 
     btn.disabled = false;

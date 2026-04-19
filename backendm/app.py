@@ -181,9 +181,9 @@ def issue_certificate():
             tx_hash,
         ))
         conn.commit()
-    except Exception as e:
+    except Exception:
         conn.close()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Erreur interne lors de la création du certificat'}), 500
     conn.close()
 
     cert = {
@@ -326,8 +326,8 @@ def download_certificate_pdf(cert_id):
 
     try:
         pdf_buffer = generate_certificate_pdf(cert)
-    except Exception as e:
-        return jsonify({'error': f'Erreur PDF : {str(e)}'}), 500
+    except Exception:
+        return jsonify({'error': 'Erreur interne lors de la génération du PDF'}), 500
 
     log_action('DOWNLOAD_PDF', cert_id, f"PDF → {cert['recipient_name']}")
 
@@ -356,8 +356,8 @@ def send_email_route(cert_id):
     try:
         pdf_buffer = generate_certificate_pdf(cert)
         success    = send_certificate_email(cert, pdf_buffer)
-    except Exception as e:
-        return jsonify({'error': f'Erreur : {str(e)}'}), 500
+    except Exception:
+        return jsonify({'error': "Erreur interne lors de l'envoi de l'email"}), 500
 
     if success:
         log_action('EMAIL_SENT', cert_id, f"Email → {cert['email']}")
@@ -373,4 +373,4 @@ def send_email_route(cert_id):
 if __name__ == '__main__':
     init_db()
     print("🚀 SmartCert API démarrée → http://127.0.0.1:5000")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='0.0.0.0', port=5000)

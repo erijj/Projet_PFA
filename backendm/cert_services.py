@@ -364,7 +364,7 @@ def send_certificate_email(cert: dict, pdf_bytes: io.BytesIO) -> bool:
 
 
 def _email_html(cert):
-    n  = cert.get('recipient_name','Etudiant')
+    n  = cert.get('recipient_name','Étudiant')
     pr = cert.get('program','—')
     ins= cert.get('institution','SmartCert University')
     d  = (cert.get('issue_date') or '—').split('T')[0]
@@ -384,7 +384,7 @@ def _email_html(cert):
 </td></tr>
 <tr><td style="background:#0A2E50;padding:32px">
   <p style="color:#BDD8E9;font-size:14px">Bonjour <strong style="color:#7BBDE8">{n}</strong>,</p>
-  <p style="color:#6EA2B3;font-size:13px;line-height:1.7">Votre certificat a ete emis et enregistre sur la blockchain Ethereum.</p>
+  <p style="color:#6EA2B3;font-size:13px;line-height:1.7">Votre certificat a été émis et enregistré sur la blockchain Ethereum.</p>
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#001D39;border:1px solid rgba(78,142,162,.3);border-radius:10px;margin:16px 0">
     <tr><td style="background:rgba(16,185,129,.08);border-bottom:1px solid rgba(16,185,129,.2);padding:12px 18px">
       <span style="color:#10b981;font-weight:700;font-size:13px">✅ Certificat Authentique et Verifie</span>

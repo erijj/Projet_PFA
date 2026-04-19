@@ -12,6 +12,7 @@ sequenceDiagram
     alt Certificat trouvé
         B-->>F: 200 OK {certificate, status}
         F->>U: Affiche  {@ nom d'Étudiant}
+    else Certificat introuvable
         B-->>F: 404 Not Found
         F->>U: "Certificat introuvable"
     end
