@@ -4,7 +4,7 @@
    ============================================================ */
 
 // ─── CONFIG ───────────────────────────────────────────────
-const DEV_MODE = true;
+const DEV_MODE = false;  // set to true to bypass auth during development
 let API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
 let currentUser = null;  // ✅ تعريف المستخدم الحالي
 

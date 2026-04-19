@@ -409,7 +409,7 @@ def auth_login():
         SESSION_COOKIE,
         session_id,
         httponly=True,
-        samesite="Lax",
+        samesite="None",
         max_age=SESSION_DURATION_HOURS * 3600,
         secure=False,  # True en production HTTPS
     )
