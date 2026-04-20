@@ -121,12 +121,12 @@ def generate_certificate_pdf(cert: dict) -> io.BytesIO:
             img_y = ly + (lh_mm - new_h)/2
             c.drawImage(ImageReader(logo_path), img_x, img_y,
                         width=new_w, height=new_h, mask='auto', preserveAspectRatio=True)
-        except:
+        except Exception:
             # Fallback si PIL n'est pas disponible
             try:
                 c.drawImage(ImageReader(logo_path), lx, ly,
                             width=lw_mm, height=lh_mm, mask='auto', preserveAspectRatio=True)
-            except:
+            except Exception:
                 c.setFillColor(C_BLUE)
                 c.setFont('Helvetica-Bold', 14)
                 c.drawCentredString(W/2, ly+8*mm, 'SmartCert')
@@ -285,7 +285,7 @@ def generate_certificate_pdf(cert: dict) -> io.BytesIO:
             lsz = 14*mm
             c.drawImage(ImageReader(lp), seax-lsz/2, seay-lsz/2+2*mm,
                         width=lsz, height=lsz, mask='auto', preserveAspectRatio=True)
-        except:
+        except Exception:
             c.setFillColor(C_BODY)
             c.setFont('Helvetica-Bold', 9)
             c.drawCentredString(seax, seay+1*mm, 'SC')
@@ -339,8 +339,9 @@ def send_certificate_email(cert: dict, pdf_bytes: io.BytesIO) -> bool:
     email = cert.get('email')
     if not email: return False
     if not SMTP_PASSWORD:
-        print("Mode demo — email simulé")
-        return True
+        # Fix P15: don't pretend the email was sent when SMTP is not configured
+        print("Mode demo — SMTP non configuré, email non envoyé")
+        return False
     try:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = f"Votre certificat SmartCert — {cert.get('program','')}"
