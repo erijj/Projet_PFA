@@ -176,6 +176,14 @@
 <script>
   const API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
 
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   // Fix P5: call the real backend API instead of faking the result
   async function verify() {
     const id = document.getElementById('certId').value.trim();
@@ -192,13 +200,14 @@
       const res  = await fetch(`${API_BASE}/certificates/verify/${encodeURIComponent(id)}`);
       const data = await res.json();
       if (data.valid || data.verified) {
-        const name = data.recipient_name || '—';
-        const prog = data.program || '—';
+        const name = escHtml(data.recipient_name || '—');
+        const prog = escHtml(data.program || '—');
         resultDiv.innerHTML =
-          '<span style="color:#34D399;"><i class="fas fa-circle-check me-1"></i> Certificat <strong>' + id + '</strong> — Authentique · ' + name + ' · ' + prog + '</span>';
+          '<span style="color:#34D399;"><i class="fas fa-circle-check me-1"></i> Certificat <strong>' + escHtml(id) + '</strong> — Authentique · ' + name + ' · ' + prog + '</span>';
       } else {
+        const msg = escHtml(data.message || 'Aucun certificat trouvé pour cet identifiant.');
         resultDiv.innerHTML =
-          '<span style="color:#F87171;"><i class="fas fa-circle-xmark me-1"></i> ' + (data.message || 'Aucun certificat trouvé pour <strong>' + id + '</strong>') + '</span>';
+          '<span style="color:#F87171;"><i class="fas fa-circle-xmark me-1"></i> ' + msg + '</span>';
       }
     } catch {
       resultDiv.innerHTML = '<span style="color:#F87171;"><i class="fas fa-circle-xmark me-1"></i> Impossible de joindre le serveur de vérification.</span>';

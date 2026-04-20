@@ -15,6 +15,7 @@ from flask import Blueprint, jsonify, request, g
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
+import time
 import jwt
 import os
 from datetime import datetime, timedelta
@@ -124,8 +125,8 @@ def _log_auth(action: str, email: str, role: str, ip: str):
         )
         conn.commit()
         conn.close()
-    except Exception:
-        pass
+    except sqlite3.Error as e:
+        print(f"⚠ Auth log error: {e}")
 
 
 # ═══════════════════════════════════════════════════════════
@@ -149,7 +150,7 @@ def login():
     user = USERS.get(email)
     # Fix P4: use check_password_hash instead of plaintext comparison
     if not user or not check_password_hash(user["password_hash"], password):
-        import time; time.sleep(0.4)  # délai anti-brute-force
+        time.sleep(0.4)  # délai anti-brute-force
         return jsonify({"error": "Email ou mot de passe incorrect", "code": "invalid_credentials"}), 401
 
     token = generate_token(email, user["role"])
@@ -243,5 +244,6 @@ def list_sessions():
         ).fetchall()
         conn.close()
         return jsonify({"sessions": [dict(r) for r in rows]})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except sqlite3.Error as e:
+        print(f"⚠ Sessions query error: {e}")
+        return jsonify({"error": "Erreur interne lors de la récupération des sessions"}), 500
