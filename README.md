@@ -48,19 +48,19 @@ Fonctionnalités principales :
 ### 1. Prérequis
 
 ```bash
-pip install flask flask-cors werkzeug web3
+cd backendm
+pip install -r requirements.txt
 ```
 
 ### 2. Initialiser la base de données et démarrer le backend
 
 ```bash
-cd backend
+cd backendm
 python app.py
 ```
 
 Cela va :
-- Créer `database.db` avec toutes les tables (certificates, audit_log, users, sessions)
-- Insérer les comptes démo par défaut
+- Créer `certificates.db` avec toutes les tables (certificates, audit_log)
 - Démarrer l'API sur http://127.0.0.1:5000
 
 ### 3. Ouvrir le frontend

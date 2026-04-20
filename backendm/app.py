@@ -12,8 +12,14 @@ from typing     import Optional
 # Nouveaux services (fichier cert_services.py dans le même dossier)
 from cert_services import generate_certificate_pdf, send_certificate_email
 
+# Fix P1: import and register the authentication blueprint
+from auth import auth_bp, require_auth
+
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
+
+# Fix P1: register authentication routes (/auth/login, /auth/logout, /auth/me …)
+app.register_blueprint(auth_bp)
 
 BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
 DATABASE = os.path.join(BASE_DIR, 'certificates.db')
@@ -78,7 +84,8 @@ def record_on_blockchain(cert_hash: str) -> Optional[str]:
                 return tx.hex()
         except Exception as e:
             print(f"⚠ Blockchain tx error: {e}")
-    return "0xtx_" + hashlib.md5(cert_hash.encode()).hexdigest()
+    # Fix P7: use SHA-256 instead of broken MD5 for the fallback tx hash
+    return "0xtx_" + hashlib.sha256(cert_hash.encode()).hexdigest()[:32]
 
 def log_action(action: str, cert_id: str = None, details: str = None):
     conn = get_db()
@@ -106,6 +113,7 @@ def home():
     })
 
 @app.route('/chain/status')
+@require_auth()
 def chain_status():
     connected = w3.is_connected()
     return jsonify({
@@ -117,6 +125,7 @@ def chain_status():
     })
 
 @app.route('/certificates', methods=['GET'])
+@require_auth()
 def get_certificates():
     conn = get_db()
     rows = conn.execute(
@@ -129,6 +138,7 @@ def get_certificates():
     })
 
 @app.route('/certificates/<cert_id>', methods=['GET'])
+@require_auth()
 def get_certificate(cert_id):
     conn = get_db()
     row  = conn.execute(
@@ -140,6 +150,7 @@ def get_certificate(cert_id):
     return jsonify(row_to_dict(row))
 
 @app.route('/certificates', methods=['POST'])
+@require_auth(roles=['admin'])
 def issue_certificate():
     data = request.get_json()
 
@@ -246,6 +257,7 @@ def verify_certificate(cert_id):
     })
 
 @app.route('/certificates/<cert_id>', methods=['DELETE'])
+@require_auth(roles=['admin'])
 def delete_certificate(cert_id):
     conn = get_db()
     row  = conn.execute(
@@ -261,6 +273,7 @@ def delete_certificate(cert_id):
     return jsonify({'message': 'Certificat supprimé', 'cert_id': cert_id})
 
 @app.route('/certificates/<cert_id>/status', methods=['PATCH'])
+@require_auth(roles=['admin'])
 def update_status(cert_id):
     data       = request.get_json()
     new_status = data.get('status')
@@ -284,6 +297,7 @@ def update_status(cert_id):
     return jsonify({'message': 'Statut mis à jour', 'cert_id': cert_id, 'status': new_status})
 
 @app.route('/stats', methods=['GET'])
+@require_auth()
 def get_stats():
     conn     = get_db()
     total    = conn.execute("SELECT COUNT(*) FROM certificates").fetchone()[0]
@@ -299,6 +313,7 @@ def get_stats():
     })
 
 @app.route('/audit', methods=['GET'])
+@require_auth(roles=['admin'])
 def get_audit():
     conn = get_db()
     rows = conn.execute(
@@ -312,6 +327,7 @@ def get_audit():
 # ═══════════════════════════════════════════════════════════
 
 @app.route('/certificates/<cert_id>/pdf', methods=['GET'])
+@require_auth()
 def download_certificate_pdf(cert_id):
     """Génère et retourne le certificat en PDF."""
     conn = get_db()
@@ -342,6 +358,7 @@ def download_certificate_pdf(cert_id):
 
 
 @app.route('/certificates/<cert_id>/send-email', methods=['POST'])
+@require_auth(roles=['admin'])
 def send_email_route(cert_id):
     """Envoie le certificat PDF par email au bénéficiaire."""
     conn = get_db()

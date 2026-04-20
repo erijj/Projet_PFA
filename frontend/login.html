@@ -84,6 +84,11 @@
 
         btn.innerHTML = '<i class="fas fa-circle-check me-2"></i>Connecté !';
         btn.style.background = 'linear-gradient(135deg,#059669,#10B981)';
+        // Store token and user so dashboard can authenticate requests
+        if (data.token) {
+          localStorage.setItem('smartcert_token', data.token);
+          localStorage.setItem('smartcert_user', JSON.stringify(data.user || {}));
+        }
         setTimeout(() => {
           window.location.href = '../dashboard/dashboard.html';
         }, 800);
