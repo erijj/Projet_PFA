@@ -10,7 +10,10 @@ from datetime   import datetime
 from typing     import Optional
 
 # Nouveaux services (fichier cert_services.py dans le même dossier)
-from cert_services import generate_certificate_pdf, send_certificate_email
+try:
+    from .cert_services import generate_certificate_pdf, send_certificate_email
+except ImportError:
+    from cert_services import generate_certificate_pdf, send_certificate_email
 
 # Fix P1: import and register the authentication blueprint
 from auth import auth_bp, require_auth
@@ -152,7 +155,9 @@ def get_certificate(cert_id):
 @app.route('/certificates', methods=['POST'])
 @require_auth(roles=['admin'])
 def issue_certificate():
-    data = request.get_json()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'Corps JSON invalide'}), 400
 
     for field in ['recipient_name', 'email', 'program']:
         if not data.get(field):
@@ -275,7 +280,9 @@ def delete_certificate(cert_id):
 @app.route('/certificates/<cert_id>/status', methods=['PATCH'])
 @require_auth(roles=['admin'])
 def update_status(cert_id):
-    data       = request.get_json()
+    data       = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'Corps JSON invalide'}), 400
     new_status = data.get('status')
     allowed    = ['Vérifié', 'En attente', 'Révoqué']
     if new_status not in allowed:
