@@ -1,100 +1,247 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SmartCert — Connexion</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-  <link href="stylelog.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500;1,700&family=Jost:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="login.css">
 </head>
+
 <body>
-  <div class="bg-orb bg-orb-1"></div>
-  <div class="bg-orb bg-orb-2"></div>
 
-  <div class="login-card">
-    <img class="logo-img" src="../shared/logo.png">     
-    <div class="login-brand">SmartCert</div>
-    <div class="alert-custom" id="alert-error">
-      <i class="fas fa-circle-exclamation me-1"></i>
-      <span id="alert-msg">Identifiants incorrects.</span>
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg sticky-top" id="navbar">
+    <div class="container">
+      <a class="navbar-brand" href="#">
+        <img src="logo.png" alt="SmartCert Logo" style="height:46px;width:auto;" />
+      </a>
+      <a class="navbar-brand" href="#">
+        <div>
+          <div class="brand-name">SmartCert</div>
+          <div class="brand-tag">Digitalisez votre réussite</div>
+        </div>
+      </a>
+      <a href="smartcert.html"
+        style="color:var(--muted);font-size:0.8rem;text-decoration:none;display:flex;align-items:center;gap:6px;margin-left:auto;transition:color .2s;"
+        onmouseover="this.style.color='var(--sky)'" onmouseout="this.style.color='var(--muted)'">
+        <i class="fas fa-arrow-left"></i> Retour à l'accueil
+      </a>
     </div>
+  </nav>
 
-    <form onsubmit="handleLogin(event)">
-      <label class="form-label">Adresse email</label>
-      <div class="input-wrapper">
-        <i class="fas fa-envelope input-icon"></i>
-        <input type="email" class="form-control-custom" id="email-input" placeholder="exemple@iset.tn" required>
-      </div>
-      <label class="form-label">Mot de passe</label>
-      <div class="input-wrapper">
-        <i class="fas fa-lock input-icon"></i>
-        <input type="password" class="form-control-custom" id="pw-input" placeholder="••••••••" required>
-        <button type="button" class="toggle-pw" onclick="togglePw()"><i class="fas fa-eye" id="pw-eye"></i></button>
-      </div>
-      <button type="submit" class="btn-login" id="login-btn">
-        <i class="fas fa-arrow-right-to-bracket me-2"></i>Se connecter
-      </button>
-    </form>
+  <!-- AUTH WRAPPER -->
+  <div class="auth-wrapper">
+    <div class="auth-card">
 
-    <div class="divider"><span>SmartCert · Blockchain Certifications</span></div>
-    <a href="index.html" class="back-link"><i class="fas fa-arrow-left me-1"></i> Retour à l'accueil</a>
+      <!-- ROLE TOGGLE -->
+      <div class="role-toggle" id="roleToggle">
+        <div class="role-toggle-slider" id="toggleSlider"></div>
+        <button class="role-btn active" id="btnAdmin" onclick="switchRole('admin')">
+          <i class="fas fa-shield-halved"></i> moderateur
+        </button>
+        <button class="role-btn" id="btnCandidate" onclick="switchRole('candidate')">
+          <i class="fas fa-user-graduate"></i> Candidat
+        </button>
+      </div>
+
+      <!-- ===================== LOGIN VIEW ===================== -->
+      <div class="view active" id="viewLogin">
+        <div class="form-header">
+          <h2>Bon retour</h2>
+          <p id="loginSubtitle">Connectez-vous à votre espace administrateur</p>
+        </div>
+
+        <div id="loginBadge" class="role-badge admin">
+          <i class="fas fa-shield-halved"></i> <span id="loginBadgeText">Accès moderateur</span>
+        </div>
+
+        <div class="form-alert err" id="loginAlert">
+          <i class="fas fa-circle-xmark"></i> <span id="loginAlertMsg">Identifiants incorrects.</span>
+        </div>
+
+        <label class="form-label" for="loginEmail">Adresse e-mail</label>
+        <div class="input-wrap">
+          <i class="fas fa-envelope input-icon"></i>
+          <input type="email"
+            pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+            title="Format: nom@domaine.com (lettres, chiffres, ., _, %, +, -)"
+            maxlength="100" id="loginEmail" placeholder="votre@email.com" required>
+        </div>
+
+        <label class="form-label" for="loginPass">Mot de passe</label>
+        <div class="input-wrap">
+          <i class="fas fa-lock input-icon"></i>
+          <input type="password" id="loginPass" placeholder="••••••••" />
+          <button class="eye-btn" onclick="togglePwd('loginPass', this)" tabindex="-1">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+
+        <div class="forgot-link"><a href="#">Mot de passe oublié ?</a></div>
+
+        <button class="btn-submit" onclick="doLogin()">
+          <i class="fas fa-arrow-right-to-bracket"></i> Se connecter
+        </button>
+
+        <div class="divider"><span>Pas encore de compte ?</span></div>
+
+        <div class="register-row">
+          <a href="#" onclick="showView('viewRegister')">Créer un compte <i class="fas fa-arrow-right"
+              style="font-size:0.7rem"></i></a>
+        </div>
+      </div>
+      <!-- END LOGIN -->
+
+      <!-- ===================== REGISTER VIEW ===================== -->
+      <div class="view" id="viewRegister">
+        <button class="back-btn" onclick="showView('viewLogin')">
+          <i class="fas fa-arrow-left"></i> Retour à la connexion
+        </button>
+
+        <div class="form-header">
+          <h2>Créer un compte</h2>
+          <p id="regSubtitle">Inscription espace moderateur</p>
+        </div>
+
+        <div id="regBadge" class="role-badge admin">
+          <i class="fas fa-shield-halved"></i> <span id="regBadgeText">Compte moderateur</span>
+        </div>
+
+        <div class="form-alert err" id="regAlertErr">
+          <i class="fas fa-circle-xmark"></i> <span id="regAlertErrMsg">Veuillez remplir tous les champs.</span>
+        </div>
+        <div class="form-alert ok" id="regAlertOk">
+          <i class="fas fa-circle-check"></i> Compte créé avec succès ! Redirection…
+        </div>
+
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label">Prénom</label>
+            <div class="input-wrap" style="margin-bottom:0">
+              <i class="fas fa-user input-icon"></i>
+              <input type="text"
+                title="2-50 lettres, espaces, tirets ou apostrophes uniquement"
+                maxlength="50" id="regFirst" placeholder="Prénom"
+                pattern="^[A-Za-zÀ-ÿ\s\-']{2,50}$" required>
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Nom</label>
+            <div class="input-wrap" style="margin-bottom:0">
+              <i class="fas fa-user input-icon"></i>
+              <input type="text"
+                pattern="^[a-zA-ZÀ-ÿ\s\-']{2,50}$"
+                title="2-50 lettres, espaces, tirets ou apostrophes uniquement"
+                maxlength="50" id="regLast" placeholder="Nom" required>
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label" for="regDob">Date de naissance</label>
+            <div class="input-wrap" style="margin-bottom:0">
+              <i class="fas fa-calendar input-icon"></i>
+              <input type="date" id="regDob">
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom:18px;"></div>
+
+        <!-- ADMIN ONLY FIELDS -->
+        <div id="adminFields">
+          <label class="form-label">Institution</label>
+          <div class="input-wrap">
+            <i class="fas fa-university input-icon"></i>
+            <input type="text" id="regInstitution" placeholder="Nom de l'établissement" />
+          </div>
+        </div>
+
+        <!-- CANDIDATE ONLY FIELDS -->
+        <div id="candidateFields" style="display:none">
+          <label class="form-label">N° d'identifiant étudiant</label>
+          <div class="input-wrap">
+            <i class="fas fa-id-card input-icon"></i>
+            <input type="text" id="regStudentId" />
+          </div>
+        </div>
+
+        <label class="form-label">Adresse e-mail</label>
+        <div class="input-wrap">
+          <i class="fas fa-envelope input-icon"></i>
+          <input type="email"
+            pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+            title="Format: nom@domaine.com (lettres, chiffres, ., _, %, +, -)"
+            maxlength="100" id="regEmail" placeholder="votre@email.com" required>
+        </div>
+
+        <label class="form-label">Mot de passe</label>
+        <div class="input-wrap">
+          <i class="fas fa-lock input-icon"></i>
+          <input type="password"
+            pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$"
+            title="12+ caractères: 1 maj, 1 min, 1 chiffre, 1 spécial (@$!%*?&)"
+            placeholder="••••••••" maxlength="128" id="regPass" required>
+          <button class="eye-btn" onclick="togglePwd('regPass', this)" tabindex="-1">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+
+        <label class="form-label">Confirmer le mot de passe</label>
+        <div class="input-wrap">
+          <i class="fas fa-lock input-icon"></i>
+          <input type="password" id="regPassConfirm" placeholder="Répétez votre mot de passe" />
+          <button class="eye-btn" onclick="togglePwd('regPassConfirm', this)" tabindex="-1">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+
+        <div class="terms-row">
+          <input type="checkbox" id="terms" />
+          <label for="terms">J'accepte les conditions d'utilisation et la politique de confidentialité de
+            SmartCert.</label>
+        </div>
+        <div class="test-links">
+          <a class="open-legal" data-doc="cgu">📜 Voir Conditions d'utilisation</a><br>
+          <a class="open-legal" data-doc="privacy">🔒 Voir Politique de confidentialité</a>
+        </div>
+
+        <!-- MODAL LÉGAL -->
+        <div id="legalModal" class="legal-modal">
+          <div class="modal-card">
+            <h4 id="legalTitle">Conditions d'utilisation</h4>
+            <div id="legalBody"></div>
+            <div style="text-align:right;">
+              <button class="close-modal close-legal">Fermer</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-submit" id="btnRegister" onclick="doRegister()">
+          <i class="fas fa-user-plus"></i> <span id="btnRegisterText">Créer mon compte moderateur</span>
+        </button>
+
+        <div style="margin-top:20px;text-align:center;">
+          <span style="font-size:0.75rem;color:var(--muted)">Déjà inscrit ? </span>
+          <a href="#" onclick="showView('viewLogin')"
+            style="font-size:0.75rem;color:var(--sky);text-decoration:none;font-weight:600;">Se connecter</a>
+        </div>
+      </div>
+      <!-- END REGISTER -->
+
+    </div>
   </div>
 
-  <script>
-    const API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-copy">&copy; 2026 SmartCert — Blockchain · Ethereum · Web3.py · Flask · n8n</div>
+  </footer>
 
-    function togglePw() {
-      const i = document.getElementById('pw-input'), e = document.getElementById('pw-eye');
-      i.type = i.type === 'password' ? 'text' : 'password';
-      e.className = i.type === 'text' ? 'fas fa-eye-slash' : 'fas fa-eye';
-    }
-
-    async function handleLogin(e) {
-      e.preventDefault();
-      const btn = document.getElementById('login-btn');
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Connexion...';
-      btn.disabled = true;
-
-      const email = document.getElementById('email-input').value.trim();
-      const pw    = document.getElementById('pw-input').value;
-
-      const errBox = document.getElementById('alert-error');
-      const errMsg = document.getElementById('alert-msg');
-      errBox.style.display = 'none';
-
-      try {
-        const res = await fetch(`${API_BASE}/auth/login`, {
-          method:      'POST',
-          headers:     { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body:        JSON.stringify({ email, password: pw }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          errBox.style.display = 'block';
-          errMsg.textContent   = data.error || 'Erreur de connexion';
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fas fa-arrow-right-to-bracket me-2"></i>Se connecter';
-          return;
-        }
-
-        btn.innerHTML = '<i class="fas fa-circle-check me-2"></i>Connecté !';
-        btn.style.background = 'linear-gradient(135deg,#059669,#10B981)';
-        setTimeout(() => {
-          window.location.href = '../dashboard/dashboard.html';
-        }, 800);
-
-      } catch (err) {
-        errBox.style.display = 'block';
-        errMsg.textContent   = 'Backend inaccessible. Vérifiez que Flask tourne sur ' + API_BASE;
-        btn.disabled  = false;
-        btn.innerHTML = '<i class="fas fa-arrow-right-to-bracket me-2"></i>Se connecter';
-      }
-    }
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="login.js"></script>
 </body>
+
 </html>

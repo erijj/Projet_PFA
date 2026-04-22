@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartCert — Vérification Publique</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500;1,700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:  #00111f;
+      --navy2: #001828;
+      --dark:  #071e30;
+      --blue:  #0a3a5c;
+      --teal:  #0fa8c0;
+      --teal2: rgba(15,168,192,0.18);
+      --tealb: rgba(15,168,192,0.25);
+      --sky:   #6dd5f0;
+      --pale:  #bdd8e9;
+      --muted: #4e8099;
+      --white: #ebf4fb;
+      --green: #22d4a0;
+      --amber: #f59e0b;
+      --gold:  #e6b85e;
+      --red:   #f87171;
+      --grad:  linear-gradient(135deg, #0a3a5c 0%, #0fa8c0 100%);
+      --grad2: linear-gradient(135deg, #6dd5f0, #22d4a0);
+      --ff:    "Cormorant Garamond", Georgia, serif;
+      --fb:    "Jost", sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--navy);
+      color: var(--pale);
+      font-family: var(--fb);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 700px 500px at 15% 20%, rgba(15,168,192,0.09), transparent),
+        radial-gradient(ellipse 600px 400px at 85% 80%, rgba(10,58,92,0.18), transparent),
+        url("data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='25' cy='25' r='1' fill='rgba(15,168,192,0.06)'/%3E%3C/svg%3E");
+    }
+
+    /* ══════════════════════════════════════════════
+       NAVBAR — strictement identique à login.html
+    ══════════════════════════════════════════════ */
+    .navbar {
+      background: rgba(0,17,31,0.88) !important;
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--tealb);
+      padding: 13px 0;
+      position: relative;
+      z-index: 10;
+    }
+    .navbar.scrolled { background: rgba(0,17,31,0.98) !important; }
+
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      text-decoration: none;
+    }
+
+    .brand-name {
+      font-family: var(--ff);
+      font-size: 1.55rem;
+      font-weight: 700;
+      line-height: 1;
+      background: linear-gradient(90deg, #ffffff 0%, #6dd5f0 50%, #0fa8c0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .brand-tag {
+      font-size: 0.58rem;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      margin-top: 2px;
+      color: var(--pale);
+    }
+
+    /* ── Bouton retour accueil (gauche, discret) */
+    .btn-home {
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: color .2s;
+      margin-right: 4px;
+    }
+    .btn-home:hover { color: var(--sky); }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+    /* ══════════════════════════════════════════════
+       HERO
+    ══════════════════════════════════════════════ */
+    .hero {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 60px 24px 36px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 16px;
+      background: rgba(15,168,192,0.1);
+      border: 1px solid var(--tealb);
+      border-radius: 100px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--sky);
+      margin-bottom: 22px;
+    }
+
+    .hero h1 {
+      font-family: var(--ff);
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 700;
+      line-height: 1.15;
+      color: var(--white);
+      margin-bottom: 14px;
+    }
+
+    .hero h1 span {
+      background: var(--grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ══════════════════════════════════════════════
+       SEARCH CARD — même glass que .auth-card
+    ══════════════════════════════════════════════ */
+    .search-container {
+      position: relative;
+      z-index: 1;
+      max-width: 640px;
+      margin: 36px auto 0;
+      padding: 0 20px;
+    }
+
+    .search-card {
+      background: linear-gradient(160deg, rgba(10,58,92,0.55), rgba(0,24,40,0.75));
+      border: 1px solid var(--tealb);
+      border-radius: 24px;
+      padding: 32px 36px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 24px 80px rgba(0,0,0,.4), 0 0 0 1px rgba(15,168,192,0.06) inset;
+      animation: slideUp .5s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    @keyframes slideUp {
+      from { opacity:0; transform:translateY(28px) scale(.98); }
+      to   { opacity:1; transform:translateY(0) scale(1); }
+    }
+
+    .search-row { display: flex; gap: 10px; }
+
+    .cert-input {
+      flex: 1;
+      background: rgba(10,58,92,0.5);
+      border: 1px solid rgba(15,168,192,0.2);
+      border-radius: 12px;
+      padding: 13px 18px;
+      color: var(--white);
+      font-family: var(--fb);
+      font-size: 0.87rem;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .cert-input:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(15,168,192,0.13);
+    }
+    .cert-input::placeholder { color: var(--muted); opacity: .7; }
+
+    .btn-verify {
+      padding: 13px 26px;
+      background: var(--grad);
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-family: var(--fb);
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 6px 24px rgba(15,168,192,0.32);
+      transition: transform .2s, box-shadow .2s;
+      letter-spacing: .5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-verify:hover  { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(15,168,192,0.42); }
+    .btn-verify:active { transform: translateY(0); }
+    .btn-verify:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+    /* ══════════════════════════════════════════════
+       RÉSULTAT
+    ══════════════════════════════════════════════ */
+    .result-section {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 30px auto 0;
+      padding: 0 20px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(12px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    .cert-valid-card {
+      background: linear-gradient(160deg, rgba(10,58,92,0.5), rgba(0,24,40,0.72));
+      border: 1px solid rgba(34,212,160,0.28);
+      border-radius: 24px;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 60px rgba(0,0,0,.4);
+      animation: fadeUp .4s ease;
+    }
+
+    .valid-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 20px 26px;
+      background: rgba(34,212,160,0.06);
+      border-bottom: 1px solid rgba(34,212,160,0.15);
+    }
+
+    .valid-icon { font-size: 28px; }
+
+    .valid-title {
+      font-family: var(--ff);
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    .valid-subtitle { font-size: 0.72rem; color: rgba(34,212,160,.65); margin-top: 3px; }
+
+    .verified-stamp {
+      margin-left: auto;
+      padding: 4px 14px;
+      background: rgba(34,212,160,0.1);
+      border: 1px solid rgba(34,212,160,0.28);
+      border-radius: 100px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--green);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Certificat papier */
+    .professional-cert {
+      background: #fff;
+      margin: 22px;
+      padding: 32px 26px;
+      position: relative;
+      box-shadow: 0 12px 40px rgba(0,0,0,.25);
+      border-radius: 6px;
+    }
+    .professional-cert::before {
+      content: '';
+      position: absolute;
+      top: 12px; left: 12px; right: 12px; bottom: 12px;
+      border: 1px solid var(--gold);
+      pointer-events: none;
+      border-radius: 3px;
+    }
+    .cert-border-inner {
+      position: relative;
+      border: 2px solid var(--gold);
+      padding: 26px 22px;
+      text-align: center;
+    }
+    .cert-seal {
+      position: absolute;
+      bottom: 16px; right: 22px;
+      width: 65px; height: 65px;
+      border-radius: 50%;
+      border: 2px solid var(--gold);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(230,184,94,0.07);
+    }
+    .cert-seal span:first-child { font-size: 26px; }
+    .cert-seal span:last-child  { font-size: 6.5px; color: #8B6914; font-weight: 700; letter-spacing: .5px; }
+    .cert-logo { text-align: center; margin-bottom: 12px; }
+    .cert-logo img { height: 46px; width: auto; object-fit: contain; }
+    .cert-title { font-family: var(--ff); font-size: 1.9rem; font-weight: 700; color: #8B6914; letter-spacing: 4px; }
+    .cert-subtitle { font-size: 0.55rem; letter-spacing: 3px; text-transform: uppercase; color: #888; border-bottom: 1px solid #ddd; display: inline-block; padding-bottom: 5px; margin-bottom: 4px; }
+    .cert-recipient { font-family: var(--ff); font-size: 2.1rem; font-weight: 600; color: #1a2a4f; margin: 18px 0 10px; font-style: italic; }
+    .cert-description { font-size: 0.75rem; color: #666; margin: 10px 0; }
+    .cert-program { font-size: 1.1rem; font-weight: 700; color: #1a2a4f; margin: 10px 0; }
+    .cert-meta { display: flex; justify-content: center; gap: 32px; margin: 18px 0; }
+    .cert-meta-label { font-size: 0.5rem; text-transform: uppercase; letter-spacing: 1px; color: #999; }
+    .cert-meta-value { font-family: var(--fb); font-size: 0.75rem; font-weight: 700; color: #1a2a4f; margin-top: 3px; }
+    .cert-signature { margin: 22px 0 12px; border-top: 1px solid #ddd; padding-top: 14px; display: flex; justify-content: center; gap: 40px; }
+    .signature-line { text-align: center; }
+    .signature-line div { width: 110px; height: 1.5px; background: #1a2a4f; margin-bottom: 5px; }
+    .signature-name  { font-family: var(--ff); font-size: 0.82rem; font-weight: 600; color: #1a2a4f; }
+    .signature-title { font-size: 0.5rem; color: #999; letter-spacing: .5px; text-transform: uppercase; }
+    .cert-footer { text-align: center; margin-top: 14px; }
+    .cert-verified { border-top: 1px solid rgba(230,184,94,.35); margin-top: 10px; padding-top: 9px; display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+    .verified-badge { color: var(--green); font-size: 0.65rem; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+
+    /* Hash */
+    .hash-section { padding: 0 26px 20px; }
+    .hash-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .hash-display { background: rgba(10,58,92,0.5); border: 1px solid rgba(15,168,192,0.2); border-radius: 10px; padding: 11px 14px; font-family: "Courier New", monospace; font-size: 0.72rem; color: var(--sky); word-break: break-all; line-height: 1.8; }
+
+    /* Actions */
+    .valid-footer { padding: 16px 26px; border-top: 1px solid rgba(34,212,160,0.12); display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+    .btn-share { padding: 9px 18px; background: transparent; border: 1px solid var(--tealb); border-radius: 10px; color: var(--sky); cursor: pointer; font-family: var(--fb); font-size: 0.78rem; font-weight: 600; transition: border-color .2s, color .2s; display: flex; align-items: center; gap: 6px; }
+    .btn-share:hover { border-color: var(--teal); color: var(--white); }
+    .btn-dl { padding: 9px 18px; background: rgba(34,212,160,0.1); border: 1px solid rgba(34,212,160,0.28); border-radius: 10px; color: var(--green); cursor: pointer; font-family: var(--fb); font-weight: 700; font-size: 0.78rem; transition: background .2s; display: flex; align-items: center; gap: 6px; }
+    .btn-dl:hover { background: rgba(34,212,160,0.2); }
+
+    /* Carte invalide */
+    .cert-invalid-card { background: linear-gradient(160deg, rgba(10,58,92,0.5), rgba(0,24,40,0.72)); border: 1px solid rgba(248,113,113,0.25); border-radius: 24px; padding: 40px 32px; backdrop-filter: blur(12px); animation: fadeUp .4s ease; text-align: center; }
+    .invalid-icon  { font-size: 3rem; margin-bottom: 14px; color: var(--red); }
+    .invalid-title { font-family: var(--ff); font-size: 1.5rem; font-weight: 700; color: var(--red); margin-bottom: 10px; }
+    .invalid-msg   { font-size: 0.85rem; color: var(--muted); line-height: 1.8; }
+    /* ══════════════════════════════════════════════
+       FOOTER — identique login.css
+    ══════════════════════════════════════════════ */
+    footer {
+      position: relative;
+      z-index: 1;
+      margin-top: auto;
+      padding: 20px 0;
+      border-top: 1px solid rgba(15,168,192,0.1);
+      text-align: center;
+    }
+    .footer-copy { font-size: 0.65rem; color: rgba(78,128,153,0.45); }
+
+    /* Spinner */
+    .spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,.3); border-top-color:white; border-radius:50%; animation:spin .65s linear infinite; display:inline-block; vertical-align:middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 576px) {
+      .search-row { flex-direction: column; }
+      .professional-cert { margin: 12px; padding: 18px 12px; }
+      .valid-footer { justify-content: center; }
+      .hero { padding: 44px 16px 28px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════
+       NAVBAR — structure identique à login.html
+  ══════════════════════════════════════════════ -->
+  <nav class="navbar navbar-expand-lg sticky-top" id="navbar">
+    <div class="container">
+
+      <!-- Logo -->
+      <a class="navbar-brand" href="smartcert.html">
+        <img src="logo.png" alt="SmartCert Logo" style="height:46px;width:auto;" />
+      </a>
+
+      <!-- Nom + slogan -->
+      <a class="navbar-brand" href="smartcert.html">
+        <div>
+          <div class="brand-name">SmartCert</div>
+          <div class="brand-tag">Digitalisez votre réussite</div>
+        </div>
+      </a>
+
+      <!-- Droite : pilule + connexion + retour accueil -->
+      <div style="display:flex;align-items:center;gap:10px;margin-left:auto;flex-wrap:wrap;">
+        <!-- Retour accueil -->
+        <a href="smartcert.html" class="btn-home">
+          <i class="fas fa-arrow-left"></i> Retour à l'accueil
+        </a>
+
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════
+       HERO
+  ══════════════════════════════════════════════ -->
+  <div class="hero">
+    <div class="hero-badge">
+      <i class="fas fa-link" style="font-size:0.6rem"></i>
+      Powered by Ethereum Blockchain
+    </div>
+    <h1>Vérifiez l'authenticité d'un<br><span>certificat numérique</span></h1>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       BARRE DE RECHERCHE
+  ══════════════════════════════════════════════ -->
+  <div class="search-container">
+    <div class="search-card">
+      <div class="search-row">
+        <input
+          class="cert-input"
+          id="certIdInput"
+          placeholder="identifiant du Certificat"
+          onkeydown="if(event.key==='Enter')verifyCert()"
+        />
+        <button class="btn-verify" id="verifyBtn" onclick="verifyCert()">
+          <i class="fas fa-bolt"></i> Vérifier
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       RÉSULTAT
+  ══════════════════════════════════════════════ -->
+  <div class="result-section" id="resultSection"></div>
+
+
+  <!-- ══════════════════════════════════════════════
+       FOOTER — identique login.html
+  ══════════════════════════════════════════════ -->
+  <footer>
+    <div class="footer-copy">
+      &copy; 2026 SmartCert — Blockchain · Ethereum · Web3.py · Flask · n8n
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    "use strict";
+
+    const API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
+
+    /* Pré-remplir depuis ?id= dans l'URL */
+    window.addEventListener('load', () => {
+      const id = new URLSearchParams(window.location.search).get('id');
+      if (id) { document.getElementById('certIdInput').value = id; verifyCert(); }
+    });
+
+    /* Effet scroll navbar */
+    window.addEventListener('scroll', () => {
+      document.getElementById('navbar')?.classList.toggle('scrolled', window.scrollY > 20);
+    });
+
+    /* ─── Vérification ─── */
+    async function verifyCert() {
+      const id  = document.getElementById('certIdInput').value.trim();
+      const res = document.getElementById('resultSection');
+      const btn = document.getElementById('verifyBtn');
+      if (!id) return;
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>&nbsp;Vérification…';
+      res.innerHTML = `
+        <div style="text-align:center;padding:36px;color:var(--muted);font-size:.85rem">
+          <span class="spinner"></span>&nbsp; Interrogation de la blockchain…
+        </div>`;
+
+      try {
+        const r    = await fetch(`${API_BASE}/certificates/verify/${encodeURIComponent(id)}`);
+        const data = await r.json();
+
+        res.innerHTML = (r.status === 404 || !data.valid)
+          ? buildInvalid(data, id)
+          : buildValid(data);
+
+        if (r.ok && data.valid) {
+          const url = `${location.origin}${location.pathname}?id=${encodeURIComponent(id)}`;
+          const el  = document.getElementById('shareUrl');
+          if (el) el.value = url;
+        }
+      } catch {
+        res.innerHTML = `
+          <div class="cert-invalid-card">
+            <div class="invalid-icon"><i class="fas fa-plug"></i></div>
+            <div class="invalid-title">Serveur non disponible</div>
+            <div class="invalid-msg">
+              Le backend Flask n'est pas accessible sur
+              <strong style="color:var(--sky)">${API_BASE}</strong>.<br>
+              Démarrez le serveur puis réessayez.
+            </div>
+          </div>`;
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-bolt"></i> Vérifier';
+      res.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    /* ─── Carte valide ─── */
+    function buildValid(d) {
+      const date = (d.issue_date || d.date || '—').split('T')[0];
+      const formattedDate = new Date(date).toLocaleDateString('fr-FR', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      });
+      const name = escHtml(d.recipient_name || d.name || '—');
+      const prog = escHtml(d.program || '—');
+      const id   = escHtml(d.id || d.cert_id || '—');
+
+      return `
+        <div class="cert-valid-card">
+
+          <div class="valid-header">
+            <div class="valid-icon">
+              <i class="fas fa-circle-check" style="color:var(--green)"></i>
+            </div>
+            <div>
+              <div class="valid-title">Certificat Authentique</div>
+              <div class="valid-subtitle">Vérifié sur la blockchain Ethereum · ID ${id}</div>
+            </div>
+            <div class="verified-stamp">
+              <i class="fas fa-link" style="font-size:.6rem"></i> VÉRIFIÉ
+            </div>
+          </div>
+
+          <div class="professional-cert">
+            <div class="cert-border-inner">
+              <div class="cert-seal"><span>🎓</span><span>VÉRIFIÉ</span></div>
+              <div class="cert-logo">
+                <img src="logo.png" alt="SmartCert"
+                     onerror="this.style.display='none';this.parentElement.innerHTML='<span style=color:#0a3a5c;font-family:Georgia;font-weight:700;font-size:18px>SmartCert</span>'">
+              </div>
+              <div class="cert-title">DIPLÔME</div>
+              <div class="cert-subtitle">Certificat d'achèvement</div>
+              <div class="cert-recipient">${name}</div>
+              <div class="cert-description">a complété avec succès le programme</div>
+              <div class="cert-program">${prog}</div>
+              <div class="cert-meta">
+                <div class="cert-meta-item">
+                  <div class="cert-meta-label">Date d'émission</div>
+                  <div class="cert-meta-value">${formattedDate}</div>
+                </div>
+                <div class="cert-meta-item">
+                  <div class="cert-meta-label">Identifiant</div>
+                  <div class="cert-meta-value">${id}</div>
+                </div>
+              </div>
+              <div class="cert-signature">
+                <div class="signature-line">
+                  <div></div>
+                  <div class="signature-name">Dr. Ahmed Benali</div>
+                  <div class="signature-title">Directeur Général</div>
+                </div>
+                <div class="signature-line">
+                  <div></div>
+                  <div class="signature-name">Pr. Sarah Mansouri</div>
+                  <div class="signature-title">Responsable Académique</div>
+                </div>
+              </div>
+              <div class="cert-footer">
+                <div class="cert-verified">
+                  <span class="verified-badge">
+                    <i class="fas fa-check"></i> Vérifié sur Blockchain Ethereum
+                  </span>
+                  <span class="verified-badge">
+                    <i class="fas fa-lock"></i> Infalsifiable · SHA-256
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          ${d.blockchain_hash ? `
+            <div class="hash-section">
+              <div class="hash-label">
+                <i class="fas fa-hashtag"></i> Hash Blockchain (SHA-256)
+              </div>
+              <div class="hash-display">${escHtml(d.blockchain_hash)}</div>
+            </div>` : ''}
+
+          <div class="valid-footer">
+            <button class="btn-share" onclick="copyShareLink()">
+              <i class="fas fa-link"></i> Copier le lien
+            </button>
+            <button class="btn-dl" onclick="window.open('${API_BASE}/certificates/${id}/pdf','_blank')">
+              <i class="fas fa-download"></i> Télécharger PDF
+            </button>
+          </div>
+        </div>
+        <input type="hidden" id="shareUrl" value="">`;
+    }
+
+    /* ─── Carte invalide ─── */
+    function buildInvalid(d, id) {
+      return `
+        <div class="cert-invalid-card">
+          <div class="invalid-icon"><i class="fas fa-circle-xmark"></i></div>
+          <div class="invalid-title">Certificat Introuvable ou Invalide</div>
+          <div class="invalid-msg">
+            ${escHtml(d.message || 'Aucun certificat trouvé pour cet identifiant.')}<br><br>
+            Identifiant recherché :
+            <strong style="color:var(--sky);font-family:'Courier New',monospace">${escHtml(id)}</strong>
+            <br><br>
+            Vérifiez l'orthographe de l'identifiant. Le certificat peut également avoir été révoqué.
+          </div>
+        </div>`;
+    }
+
+    function copyShareLink() {
+      const url = document.getElementById('shareUrl')?.value;
+      if (!url) return;
+      navigator.clipboard.writeText(url)
+        .then(() => alert('Lien copié dans le presse-papiers !'))
+        .catch(() => {});
+    }
+
+    function escHtml(s) {
+      return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>
