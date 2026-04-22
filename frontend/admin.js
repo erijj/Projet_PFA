@@ -1,8 +1,8 @@
 /* ============================================================
-   SmartCert — script.js
+   SmartCert — admin.js
+   Admin dashboard — JWT-based authentication
    ============================================================ */
 
-const DEV_MODE = true;
 let API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
 
 let allCerts      = [];
@@ -12,6 +12,27 @@ let currentPage   = 1;
 const PAGE_SIZE   = 8;
 let certToDelete  = null;
 let currentUser   = null;
+let certPreviewing = null; // id of cert currently open in preview modal
+
+/* ─── AUTH HELPERS ─── */
+function getToken() {
+  return localStorage.getItem('smartcert_token');
+}
+
+function authHeaders(extra = {}) {
+  const token = getToken();
+  return {
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...extra,
+  };
+}
+
+async function authFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    headers: { ...authHeaders(), ...(options.headers || {}) },
+  });
+}
 
 /* ─── INIT ─── */
 document.addEventListener('DOMContentLoaded', async () => {
@@ -29,25 +50,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 /* ─── AUTH ─── */
 async function requireAuthOrRedirect() {
-  if (DEV_MODE) {
-    currentUser = { email: 'admin@smartcert.tn', role: 'admin' };
-    const nameEl   = document.getElementById('user-name');
-    const roleEl   = document.getElementById('user-role');
-    const avatarEl = document.getElementById('user-avatar');
-    if (nameEl)   nameEl.textContent   = 'Admin';
-    if (roleEl)   roleEl.textContent   = 'Administrateur';
-    if (avatarEl) avatarEl.textContent = 'A';
-    return;
-  }
-
   try {
-    const res  = await fetch(`${API_BASE}/certificates`, { credentials: 'include' });
+    const res  = await authFetch(`${API_BASE}/auth/me`);
     const data = await res.json();
     if (!data.authenticated) {
-      window.location.href = '../frontend/login.html';
+      window.location.href = 'login.html';
       return;
     }
-    const user = data.user;
+    currentUser = data.user || data;
+    const user = currentUser;
     const nameEl   = document.getElementById('user-name');
     const roleEl   = document.getElementById('user-role');
     const avatarEl = document.getElementById('user-avatar');
@@ -55,13 +66,14 @@ async function requireAuthOrRedirect() {
     if (roleEl)   roleEl.textContent   = user.role === 'admin' ? 'Administrateur' : 'Étudiant';
     if (avatarEl) avatarEl.textContent = user.email ? user.email[0].toUpperCase() : 'U';
   } catch {
-    window.location.href = '../frontend/login.html';
+    window.location.href = 'login.html';
   }
 }
 
 async function logout() {
-  await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
-  window.location.href = '../frontend/login.html';
+  await authFetch(`${API_BASE}/auth/logout`, { method: 'POST' });
+  localStorage.removeItem('smartcert_token');
+  window.location.href = 'login.html';
 }
 
 /* ─── NAVIGATION ─── */
@@ -97,7 +109,7 @@ function showPage(page) {
 async function checkChainStatus() {
   const el = document.getElementById('chain-status-text');
   try {
-    const res  = await fetch(`${API_BASE}/chain/status`, { credentials: 'include' });
+    const res  = await authFetch(`${API_BASE}/chain/status`);
     const data = await res.json();
     if (data.connected) {
       el.textContent = `Ethereum Testnet · v${data.web3_version || '—'}`;
@@ -126,7 +138,7 @@ function styleChainError(el) {
 async function loadChainInfo() {
   const el = document.getElementById('chainInfo');
   try {
-    const res = await fetch(`${API_BASE}/chain/status`, { credentials: 'include' });
+    const res = await authFetch(`${API_BASE}/chain/status`);
     const d   = await res.json();
     el.innerHTML = `
       <div class="info-grid">
@@ -152,7 +164,7 @@ async function loadChainInfo() {
 /* ─── LOAD CERTIFICATES ─── */
 async function loadCertificates() {
   try {
-    const res  = await fetch(`${API_BASE}/certificates`, { credentials: 'include' });
+    const res  = await authFetch(`${API_BASE}/certificates`);
     const data = await res.json();
     allCerts      = data.certificates || data || [];
     filteredCerts = [...allCerts];
@@ -332,6 +344,7 @@ function toggleSelectAll(cb) {
 /* ─── PREVIEW MODAL ─── */
 function openPreview(cert) {
   const c    = cert;
+  certPreviewing = c.id || c.cert_id || null; // remember cert for PDF download
   const date = c.issue_date ? c.issue_date.split('T')[0] : (c.date || '—');
 
   document.getElementById('certPreviewContent').innerHTML = `
@@ -385,8 +398,8 @@ async function confirmDelete() {
   btn.disabled  = true;
 
   try {
-    const res = await fetch(`${API_BASE}/certificates/${certToDelete}`, {
-      method: 'DELETE', credentials: 'include'
+    const res = await authFetch(`${API_BASE}/certificates/${certToDelete}`, {
+      method: 'DELETE',
     });
     if (res.ok) {
       showToast('Certificat supprimé', 'success');
@@ -422,11 +435,10 @@ async function issueCertificate() {
   btn.disabled  = true;
 
   try {
-    const res = await fetch(`${API_BASE}/certificates`, {
-      method:      'POST',
-      headers:     { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body:        JSON.stringify({
+    const res = await authFetch(`${API_BASE}/certificates`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
         recipient_name: name, email,
         program:        prog,
         institution:    inst || 'SmartCert University',
@@ -468,7 +480,7 @@ async function verifyCertificate() {
   result.innerHTML = `<div style="color:var(--muted);font-size:13px"><span class="spinner"></span> Vérification en cours…</div>`;
 
   try {
-    const res  = await fetch(`${API_BASE}/certificates/verify/${encodeURIComponent(id)}`, { credentials: 'include' });
+    const res  = await authFetch(`${API_BASE}/certificates/verify/${encodeURIComponent(id)}`);
     const data = await res.json();
 
     if (data.valid || data.verified) {
@@ -526,7 +538,14 @@ function exportCSV() {
 
 /* ─── DOWNLOAD PDF ─── */
 function downloadPDF() {
-  showToast('Connexion backend pour PDF requise', 'info');
+  if (!certPreviewing) {
+    showToast('Aucun certificat sélectionné', 'info');
+    return;
+  }
+  const token = getToken();
+  // Open PDF in a new tab; token passed as query param since window.open cannot set headers
+  const url = `${API_BASE}/certificates/${encodeURIComponent(certPreviewing)}/pdf${token ? '?token=' + encodeURIComponent(token) : ''}`;
+  window.open(url, '_blank');
 }
 
 /* ─── SETTINGS ─── */
