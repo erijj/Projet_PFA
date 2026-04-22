@@ -1,0 +1,7 @@
+flask
+flask-cors
+web3
+reportlab
+Pillow
+PyJWT
+werkzeug

@@ -289,13 +289,19 @@
   </div>
 
   <script>
-    // ─── CONFIG ───────────────────────────────────────────
+    // ─── CONFIG ───────────────────────────────────────────────
     const API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
 
     // Redirections selon le rôle — adaptées à la structure du projet
     const ROLE_REDIRECTS = {
       admin:    '../dashboard/dashboard.html',
       etudiant: '../certificates/dashboard_condidat.html',
+    };
+
+    // ─── Config démo (affichée après échec de connexion) ────
+    const DEMO_ACCOUNTS = {
+      admin:    { email: 'admin@smartcert.tn',    pw: 'admin123',    redirect: 'dashboard.html' },
+      etudiant: { email: 'etudiant@smartcert.tn', pw: 'etudiant123', redirect: '../certificates/dashboard_condidat.html' },
     };
 
     const DEMO_HINTS = {

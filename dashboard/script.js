@@ -15,6 +15,27 @@ let currentFilter = 'all';
 let currentPage   = 1;
 const PAGE_SIZE   = 8;
 let certToDelete  = null;       // id of cert pending delete confirmation
+let certPreviewing = null;      // id of cert currently open in preview modal
+
+// ─── AUTH HELPERS ─────────────────────────────────────────
+function getToken() {
+  return localStorage.getItem('smartcert_token');
+}
+
+function authHeaders(extra = {}) {
+  const token = getToken();
+  return {
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...extra,
+  };
+}
+
+async function authFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    headers: { ...authHeaders(), ...(options.headers || {}) },
+  });
+}
 
 // ─── INIT ─────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -42,14 +63,16 @@ async function requireAuthOrRedirect() {
   // ... بقية الكود الأصلي
 
   try {
-    const res  = await fetch(`${API_BASE}/certificates`, { credentials: 'include' });
+    // Fix P1/P2: use Authorization header (JWT) instead of cookies
+    const res  = await authFetch(`${API_BASE}/auth/me`);
     const data = await res.json();
+    // Fix P2: backend now returns 'authenticated: true' on success
     if (!data.authenticated) {
       window.location.href = '../frontend/login.html';
       return;
     }
     // Display user info in sidebar
-    const user = data.user;
+    const user = data.user || data;
     const nameEl   = document.getElementById('user-name');
     const roleEl   = document.getElementById('user-role');
     const avatarEl = document.getElementById('user-avatar');
@@ -62,7 +85,11 @@ async function requireAuthOrRedirect() {
 }
 
 async function logout() {
-  await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
+  // Send JWT in header so the backend can log the logout action
+  await authFetch(`${API_BASE}/auth/logout`, { method: 'POST' });
+  // Clear stored credentials
+  localStorage.removeItem('smartcert_token');
+  localStorage.removeItem('smartcert_user');
   window.location.href = '../frontend/login.html';
 }
 
@@ -101,7 +128,7 @@ function showPage(page) {
 async function checkChainStatus() {
   const el = document.getElementById('chain-status-text');
   try {
-    const res = await fetch(`${API_BASE}/chain/status`, { credentials: 'include' });
+    const res = await authFetch(`${API_BASE}/chain/status`);
     const data = await res.json();
     if (data.connected) {
       el.textContent = `Ethereum Testnet · v${data.web3_version || '—'}`;
@@ -120,7 +147,7 @@ async function checkChainStatus() {
 async function loadChainInfo() {
   const el = document.getElementById('chainInfo');
   try {
-    const res = await fetch(`${API_BASE}/chain/status`, { credentials: 'include' });
+    const res = await authFetch(`${API_BASE}/chain/status`);
     const d = await res.json();
     el.innerHTML = `
       <div class="info-grid">
@@ -141,7 +168,7 @@ async function loadChainInfo() {
 // ─── LOAD CERTIFICATES ────────────────────────────────────
 async function loadCertificates() {
   try {
-    const res = await fetch(`${API_BASE}/certificates`, { credentials: 'include' });
+    const res = await authFetch(`${API_BASE}/certificates`);
     const data = await res.json();
     allCerts = data.certificates || data || [];
     filteredCerts = [...allCerts];
@@ -297,6 +324,7 @@ function toggleSelectAll(cb) {
 // ─── PREVIEW MODAL ────────────────────────────────────────
 function openPreview(cert) {
   const c = cert;
+  certPreviewing = c.id || c.cert_id || null;   // Fix P6: remember cert for PDF download
   const date = c.issue_date ? c.issue_date.split('T')[0] : (c.date || '—');
 
   document.getElementById('certPreviewContent').innerHTML = `
@@ -342,7 +370,7 @@ async function confirmDelete() {
   btn.disabled = true;
 
   try {
-    const res = await fetch(`${API_BASE}/certificates/${certToDelete}`, { method: 'DELETE', credentials: 'include' });
+    const res = await authFetch(`${API_BASE}/certificates/${certToDelete}`, { method: 'DELETE' });
     if (res.ok) {
       showToast('🗑 Certificat supprimé', 'success');
       await loadCertificates();
@@ -376,11 +404,10 @@ async function issueCertificate() {
   btn.disabled = true;
 
   try {
-    const res = await fetch(`${API_BASE}/certificates`, {
-      method:      'POST',
-      headers:     { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body:        JSON.stringify({ recipient_name: name, email, program: prog, institution: inst, issue_date: date }),
+    const res = await authFetch(`${API_BASE}/certificates`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ recipient_name: name, email, program: prog, institution: inst, issue_date: date }),
     });
     const data = await res.json();
     if (res.ok) {
@@ -416,7 +443,7 @@ async function verifyCertificate() {
   result.innerHTML = `<div style="color:var(--text-muted);font-size:13px"><span class="spinner"></span> Vérification en cours…</div>`;
 
   try {
-    const res = await fetch(`${API_BASE}/certificates/verify/${encodeURIComponent(id)}`, { credentials: 'include' });
+    const res = await authFetch(`${API_BASE}/certificates/verify/${encodeURIComponent(id)}`);
     const data = await res.json();
 
     if (data.valid || data.verified) {
@@ -466,9 +493,17 @@ function exportCSV() {
 }
 
 // ─── DOWNLOAD PDF ─────────────────────────────────────────
+// Fix P6: actually download the PDF from the backend
 function downloadPDF() {
-  showToast('ℹ Connexion backend pour PDF requise', 'info');
-  // TODO: call API_BASE/certificates/{id}/pdf
+  if (!certPreviewing) {
+    showToast('ℹ Aucun certificat sélectionné', 'info');
+    return;
+  }
+  const token = getToken();
+  // Open in a new tab; the browser handles the PDF download.
+  // The token is appended as a query param since window.open cannot set headers.
+  const url = `${API_BASE}/certificates/${encodeURIComponent(certPreviewing)}/pdf${token ? '?token=' + encodeURIComponent(token) : ''}`;
+  window.open(url, '_blank');
 }
 
 // ─── SETTINGS ─────────────────────────────────────────────
