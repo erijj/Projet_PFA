@@ -10,17 +10,24 @@ from datetime   import datetime
 from typing     import Optional
 
 # Nouveaux services (fichier cert_services.py dans le même dossier)
-from cert_services import generate_certificate_pdf, send_certificate_email
+try:
+    from .cert_services import generate_certificate_pdf, send_certificate_email
+except ImportError:
+    from cert_services import generate_certificate_pdf, send_certificate_email
+
+# Fix P1: import and register the authentication blueprint
+from auth import auth_bp, require_auth
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
+
+# Fix P1: register authentication routes (/auth/login, /auth/logout, /auth/me …)
+app.register_blueprint(auth_bp)
 
 BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
-DATABASE      = os.path.join(BASE_DIR, 'database.db')
+DATABASE = os.path.join(BASE_DIR, 'certificates.db')
 WEB3_PROVIDER = os.getenv('WEB3_PROVIDER', 'http://127.0.0.1:7545')
 w3 = Web3(Web3.HTTPProvider(WEB3_PROVIDER))
-#changementtest
-#changementtest
 # ─── DATABASE ─────────────────────────────────────────────
 def get_db():
     conn = sqlite3.connect(DATABASE)
@@ -80,7 +87,8 @@ def record_on_blockchain(cert_hash: str) -> Optional[str]:
                 return tx.hex()
         except Exception as e:
             print(f"⚠ Blockchain tx error: {e}")
-    return "0xtx_" + hashlib.md5(cert_hash.encode()).hexdigest()
+    # Fix P7: use SHA-256 instead of broken MD5 for the fallback tx hash
+    return "0xtx_" + hashlib.sha256(cert_hash.encode()).hexdigest()[:32]
 
 def log_action(action: str, cert_id: str = None, details: str = None):
     conn = get_db()
@@ -108,6 +116,7 @@ def home():
     })
 
 @app.route('/chain/status')
+@require_auth()
 def chain_status():
     connected = w3.is_connected()
     return jsonify({
@@ -119,6 +128,7 @@ def chain_status():
     })
 
 @app.route('/certificates', methods=['GET'])
+@require_auth()
 def get_certificates():
     conn = get_db()
     rows = conn.execute(
@@ -131,6 +141,7 @@ def get_certificates():
     })
 
 @app.route('/certificates/<cert_id>', methods=['GET'])
+@require_auth()
 def get_certificate(cert_id):
     conn = get_db()
     row  = conn.execute(
@@ -142,8 +153,11 @@ def get_certificate(cert_id):
     return jsonify(row_to_dict(row))
 
 @app.route('/certificates', methods=['POST'])
+@require_auth(roles=['admin'])
 def issue_certificate():
-    data = request.get_json()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'Corps JSON invalide'}), 400
 
     for field in ['recipient_name', 'email', 'program']:
         if not data.get(field):
@@ -185,7 +199,8 @@ def issue_certificate():
         conn.commit()
     except Exception as e:
         conn.close()
-        return jsonify({'error': str(e)}), 500
+        print(f"❌ Erreur création certificat: {e}")
+        return jsonify({'error': 'Erreur interne lors de la création du certificat'}), 500
     conn.close()
 
     cert = {
@@ -247,6 +262,7 @@ def verify_certificate(cert_id):
     })
 
 @app.route('/certificates/<cert_id>', methods=['DELETE'])
+@require_auth(roles=['admin'])
 def delete_certificate(cert_id):
     conn = get_db()
     row  = conn.execute(
@@ -262,8 +278,11 @@ def delete_certificate(cert_id):
     return jsonify({'message': 'Certificat supprimé', 'cert_id': cert_id})
 
 @app.route('/certificates/<cert_id>/status', methods=['PATCH'])
+@require_auth(roles=['admin'])
 def update_status(cert_id):
-    data       = request.get_json()
+    data       = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'Corps JSON invalide'}), 400
     new_status = data.get('status')
     allowed    = ['Vérifié', 'En attente', 'Révoqué']
     if new_status not in allowed:
@@ -285,6 +304,7 @@ def update_status(cert_id):
     return jsonify({'message': 'Statut mis à jour', 'cert_id': cert_id, 'status': new_status})
 
 @app.route('/stats', methods=['GET'])
+@require_auth()
 def get_stats():
     conn     = get_db()
     total    = conn.execute("SELECT COUNT(*) FROM certificates").fetchone()[0]
@@ -300,6 +320,7 @@ def get_stats():
     })
 
 @app.route('/audit', methods=['GET'])
+@require_auth(roles=['admin'])
 def get_audit():
     conn = get_db()
     rows = conn.execute(
@@ -313,6 +334,7 @@ def get_audit():
 # ═══════════════════════════════════════════════════════════
 
 @app.route('/certificates/<cert_id>/pdf', methods=['GET'])
+@require_auth()
 def download_certificate_pdf(cert_id):
     """Génère et retourne le certificat en PDF."""
     conn = get_db()
@@ -329,7 +351,8 @@ def download_certificate_pdf(cert_id):
     try:
         pdf_buffer = generate_certificate_pdf(cert)
     except Exception as e:
-        return jsonify({'error': f'Erreur PDF : {str(e)}'}), 500
+        print(f"❌ Erreur génération PDF ({cert_id}): {e}")
+        return jsonify({'error': 'Erreur interne lors de la génération du PDF'}), 500
 
     log_action('DOWNLOAD_PDF', cert_id, f"PDF → {cert['recipient_name']}")
 
@@ -342,6 +365,7 @@ def download_certificate_pdf(cert_id):
 
 
 @app.route('/certificates/<cert_id>/send-email', methods=['POST'])
+@require_auth(roles=['admin'])
 def send_email_route(cert_id):
     """Envoie le certificat PDF par email au bénéficiaire."""
     conn = get_db()
@@ -359,7 +383,8 @@ def send_email_route(cert_id):
         pdf_buffer = generate_certificate_pdf(cert)
         success    = send_certificate_email(cert, pdf_buffer)
     except Exception as e:
-        return jsonify({'error': f'Erreur : {str(e)}'}), 500
+        print(f"❌ Erreur envoi email ({cert_id}): {e}")
+        return jsonify({'error': "Erreur interne lors de l'envoi de l'email"}), 500
 
     if success:
         log_action('EMAIL_SENT', cert_id, f"Email → {cert['email']}")
@@ -375,4 +400,4 @@ def send_email_route(cert_id):
 if __name__ == '__main__':
     init_db()
     print("🚀 SmartCert API démarrée → http://127.0.0.1:5000")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=False, host='127.0.0.1', port=5000)

@@ -1,492 +1,424 @@
 """
-SmartCert — cert_services.py
-Deux services indépendants :
-  1. generate_certificate_pdf(cert: dict) -> BytesIO
-  2. send_certificate_email(cert: dict, pdf_bytes: BytesIO) -> bool
+SmartCert — cert_services.py (VERSION FINALE)
+Design certificat professionnel style papier officiel
+identique dans le PDF et dans les pages web
 """
 
-import io
-import smtplib
-import os
+import io, smtplib, os
 from email.mime.multipart import MIMEMultipart
 from email.mime.text      import MIMEText
 from email.mime.base      import MIMEBase
-from email              import encoders
-from datetime           import datetime
+from email                import encoders
 
-# ── ReportLab ────────────────────────────────────────────
-from reportlab.lib.pagesizes   import A4
-from reportlab.lib             import colors
-from reportlab.lib.units       import mm
-from reportlab.pdfgen          import canvas
-from reportlab.lib.utils       import ImageReader
+from reportlab.lib.pagesizes import A4
+from reportlab.lib           import colors
+from reportlab.lib.units     import mm
+from reportlab.pdfgen        import canvas
+from reportlab.lib.utils     import ImageReader
 
-# ─── EMAIL CONFIG ─────────────────────────────────────────
-# Remplir dans .env ou variables d'environnement
 SMTP_HOST     = os.getenv('SMTP_HOST',     'smtp.gmail.com')
 SMTP_PORT     = int(os.getenv('SMTP_PORT', '587'))
 SMTP_USER     = os.getenv('SMTP_USER',     'smartcert.noreply@gmail.com')
-SMTP_PASSWORD = os.getenv('SMTP_PASSWORD', '')          # App Password Gmail
+SMTP_PASSWORD = os.getenv('SMTP_PASSWORD', '')
 FROM_NAME     = os.getenv('FROM_NAME',     'SmartCert')
 
-# ─── PALETTE (reprend les couleurs du projet) ─────────────
-C_NAVY   = colors.HexColor('#001D39')
-C_BLUE1  = colors.HexColor('#0A4174')
-C_TEAL   = colors.HexColor('#4E8EA2')
-C_ACCENT = colors.HexColor('#7BBDE8')
-C_PALE   = colors.HexColor('#BDD8E9')
-C_WHITE  = colors.white
-C_GREEN  = colors.HexColor('#10b981')
-C_GOLD   = colors.HexColor('#C8A84B')
+# Palette identique au projet
+C_NAVY  = colors.HexColor('#001D39')
+C_BLUE  = colors.HexColor('#0A4174')
+C_TEAL  = colors.HexColor('#4E8EA2')
+C_ACC   = colors.HexColor('#7BBDE8')
+C_PALE  = colors.HexColor('#BDD8E9')
+C_WHITE = colors.white
+C_GREEN = colors.HexColor('#10b981')
+C_GOLD  = colors.HexColor('#C9A03D')
+C_BODY  = colors.HexColor('#1A2A4F')
+C_DARK  = colors.HexColor('#2C3E5A')
+C_BORDER = colors.HexColor('#D4AF37')
 
-# ═══════════════════════════════════════════════════════════
-#  1. GÉNÉRATION PDF
-# ═══════════════════════════════════════════════════════════
+def _logo():
+    base = os.path.dirname(os.path.abspath(__file__))
+    for p in [os.path.join(base,'..','shared','logo.png'),
+              os.path.join(base,'shared','logo.png'),
+              os.path.join(base,'logo.png')]:
+        if os.path.exists(p): return p
+    return None
 
 def generate_certificate_pdf(cert: dict) -> io.BytesIO:
-    """
-    Génère un certificat PDF professionnel à partir des données.
+    buf = io.BytesIO()
+    W, H = A4
+    c = canvas.Canvas(buf, pagesize=A4)
 
-    Paramètres attendus dans cert :
-        id, recipient_name, email, program,
-        institution, issue_date, status,
-        blockchain_hash, tx_hash
+    # ── FOND BLANC PAPIER ────────────────────────────────
+    c.setFillColor(colors.HexColor('#FDFAF4'))
+    c.rect(0, 0, W, H, fill=1, stroke=0)
 
-    Retourne un BytesIO contenant le PDF.
-    """
-    buffer = io.BytesIO()
-    W, H   = A4                        # 595 x 842 pts
-    c      = canvas.Canvas(buffer, pagesize=A4)
+    # Texture subtile : lignes très légères
+    c.setStrokeColor(colors.HexColor('#E8DFC8'))
+    c.setLineWidth(0.3)
+    for y in range(0, int(H), 8):
+        c.line(0, y, W, y)
 
-    _draw_background(c, W, H)
-    _draw_border(c, W, H)
-    _draw_header(c, W, H)
-    _draw_body(c, W, H, cert)
-    _draw_blockchain_footer(c, W, H, cert)
-    _draw_decorations(c, W, H)
+    # Fond blanc pur sur la zone centrale
+    c.setFillColor(colors.white)
+    c.rect(14*mm, 14*mm, W-28*mm, H-28*mm, fill=1, stroke=0)
+
+    # ── BORDURES DORÉES DOUBLES ──────────────────────────
+    c.setStrokeColor(C_GOLD)
+    c.setLineWidth(3.5)
+    c.rect(10*mm, 10*mm, W-20*mm, H-20*mm, fill=0, stroke=1)
+    c.setLineWidth(0.8)
+    c.rect(13.5*mm, 13.5*mm, W-27*mm, H-27*mm, fill=0, stroke=1)
+
+    # ── COINS ORNEMENTAUX ───────────────────────────────
+    def corner(x, y, dx, dy):
+        s = 10*mm
+        c.setStrokeColor(C_GOLD)
+        c.setLineWidth(2)
+        c.line(x, y, x+dx*s, y)
+        c.line(x, y, x, y+dy*s)
+        c.setFillColor(C_GOLD)
+        c.circle(x, y, 1.5*mm, fill=1, stroke=0)
+    m = 10*mm
+    corner(m, m, 1, 1)
+    corner(W-m, m, -1, 1)
+    corner(m, H-m, 1, -1)
+    corner(W-m, H-m, -1, -1)
+
+    # ── BANDE DÉCORATIVE BLEUE HAUTE ───────────────────
+    c.setFillColor(C_BLUE)
+    c.rect(14*mm, H-50*mm, W-28*mm, 36*mm, fill=1, stroke=0)
+
+    # ── LOGO STYLE PAGE WEB (90x60) ─────────────────────
+    logo_path = _logo()
+    lw, lh = 90, 60  # en points (1 point = 1/72 inch)
+    # Convertir en mm pour le placement (90px ~ 31.75mm)
+    lw_mm = 31.75 * mm
+    lh_mm = 21.17 * mm
+    lx = W/2 - lw_mm/2
+    ly = H - 46*mm
+
+    # Cadre blanc avec ombre légère
+    c.setFillColor(colors.white)
+    c.setStrokeColor(C_ACC)
+    c.setLineWidth(1.5)
+    c.roundRect(lx-3*mm, ly-3*mm, lw_mm+6*mm, lh_mm+6*mm, 4*mm, fill=1, stroke=1)
+    
+    # Effet d'ombre (simulation)
+    c.setFillColor(colors.HexColor('#E0E0E0'))
+    c.roundRect(lx-2*mm, ly-4*mm, lw_mm+6*mm, lh_mm+6*mm, 4*mm, fill=0, stroke=0)
+    
+    if logo_path:
+        try:
+            # Charger l'image et la redimensionner
+            from PIL import Image
+            img = Image.open(logo_path)
+            # Conserver les proportions
+            img_width, img_height = img.size
+            ratio = min(lw_mm / img_width, lh_mm / img_height)
+            new_w = img_width * ratio
+            new_h = img_height * ratio
+            img_x = lx + (lw_mm - new_w)/2
+            img_y = ly + (lh_mm - new_h)/2
+            c.drawImage(ImageReader(logo_path), img_x, img_y,
+                        width=new_w, height=new_h, mask='auto', preserveAspectRatio=True)
+        except Exception as e:
+            # Fallback si PIL n'est pas disponible
+            print(f"⚠ PIL logo resize error: {e}")
+            try:
+                c.drawImage(ImageReader(logo_path), lx, ly,
+                            width=lw_mm, height=lh_mm, mask='auto', preserveAspectRatio=True)
+            except Exception as e2:
+                print(f"⚠ Logo draw fallback error: {e2}")
+                c.setFillColor(C_BLUE)
+                c.setFont('Helvetica-Bold', 14)
+                c.drawCentredString(W/2, ly+8*mm, 'SmartCert')
+    else:
+        c.setFillColor(C_BLUE)
+        c.setFont('Helvetica-Bold', 14)
+        c.drawCentredString(W/2, ly+8*mm, 'SmartCert')
+
+    # ── NOM INSTITUTION ─────────────────────────────────
+    c.setFillColor(C_PALE)
+    c.setFont('Helvetica-Bold', 11)
+    c.drawCentredString(W/2, H-52*mm, cert.get('institution','SmartCert University').upper())
+
+    # ── LIGNE DORÉE SÉPARATRICE ─────────────────────────
+    c.setStrokeColor(C_GOLD)
+    c.setLineWidth(1.2)
+    c.line(22*mm, H-55*mm, W-22*mm, H-55*mm)
+    c.setStrokeColor(C_TEAL)
+    c.setLineWidth(0.4)
+    c.line(22*mm, H-56.5*mm, W-22*mm, H-56.5*mm)
+
+    # ── TITRE ───────────────────────────────────────────
+    c.setFillColor(C_BODY)
+    c.setFont('Helvetica-Bold', 24)
+    c.drawCentredString(W/2, H-68*mm, 'CERTIFICAT DE RÉUSSITE')
+    c.setFillColor(C_TEAL)
+    c.setFont('Helvetica', 8)
+    c.drawCentredString(W/2, H-74*mm, '—  CERTIFICATE OF ACHIEVEMENT  —')
+
+    # ── CORPS ───────────────────────────────────────────
+    name    = cert.get('recipient_name', '—')
+    program = cert.get('program', '—')
+    date    = (cert.get('issue_date') or '—').split('T')[0]
+    status  = cert.get('status', 'Vérifié')
+    cid     = cert.get('id', '—')
+
+    c.setFillColor(C_TEAL)
+    c.setFont('Helvetica', 10)
+    c.drawCentredString(W/2, H-86*mm, 'La présente certifie que')
+
+    # Nom
+    fs = 28 if len(name) <= 22 else (22 if len(name) <= 30 else 17)
+    c.setFillColor(C_BODY)
+    c.setFont('Helvetica-Bold', fs)
+    c.drawCentredString(W/2, H-98*mm, name)
+
+    nw = c.stringWidth(name, 'Helvetica-Bold', fs)
+    c.setStrokeColor(C_GOLD)
+    c.setLineWidth(1.2)
+    half = min(nw/2+8*mm, W/2-18*mm)
+    c.line(W/2-half, H-101*mm, W/2+half, H-101*mm)
+
+    c.setFillColor(C_DARK)
+    c.setFont('Helvetica', 9.5)
+    c.drawCentredString(W/2, H-110*mm, 'a complété avec succès le programme')
+
+    pf = 15 if len(program) <= 40 else 12
+    c.setFillColor(C_BODY)
+    c.setFont('Helvetica-Bold', pf)
+    c.drawCentredString(W/2, H-120*mm, program)
+
+    # ── SÉPARATEUR ──────────────────────────────────────
+    c.setStrokeColor(colors.HexColor('#D5E8F5'))
+    c.setLineWidth(0.8)
+    c.line(20*mm, H-128*mm, W-20*mm, H-128*mm)
+
+    # ── 3 CARTES INFO ───────────────────────────────────
+    gy = H-140*mm
+    for cx, lb, vl in zip(
+        [W*0.22, W*0.5, W*0.78],
+        ["Date d'émission","Identifiant","Statut"],
+        [date, cid, status]
+    ):
+        c.setFillColor(colors.HexColor('#F0F7FF'))
+        c.setStrokeColor(colors.HexColor('#C0D8F0'))
+        c.setLineWidth(0.5)
+        c.roundRect(cx-22*mm, gy-10*mm, 44*mm, 19*mm, 2*mm, fill=1, stroke=1)
+        c.setFillColor(C_TEAL)
+        c.setFont('Helvetica', 6.5)
+        c.drawCentredString(cx, gy+5*mm, lb.upper())
+        vc = C_GREEN if (lb == 'Statut' and status == 'Vérifié') else C_BODY
+        c.setFillColor(vc)
+        vf = 7.5 if len(vl) > 14 else 9.5
+        c.setFont('Helvetica-Bold', vf)
+        c.drawCentredString(cx, gy-4*mm, vl)
+
+    # ── TAMPON VÉRIFIÉ ──────────────────────────────────
+    if status == 'Vérifié':
+        c.saveState()
+        c.translate(W-46*mm, H-128*mm)
+        c.rotate(16)
+        c.setStrokeColor(C_GREEN)
+        c.setLineWidth(2.2)
+        c.setFillColor(colors.HexColor('#F0FDF8'))
+        c.roundRect(-19*mm, -7*mm, 38*mm, 14*mm, 3*mm, fill=1, stroke=1)
+        c.setFillColor(C_GREEN)
+        c.setFont('Helvetica-Bold', 10)
+        c.drawCentredString(0, -2.5*mm, 'VERIFIE')
+        c.restoreState()
+
+    # ── SÉPARATION SIGNATURE ────────────────────────────
+    sep_y = H-168*mm
+    c.setStrokeColor(colors.HexColor('#D5E8F5'))
+    c.setLineWidth(0.8)
+    c.line(20*mm, sep_y+14*mm, W-20*mm, sep_y+14*mm)
+
+    # ── SIGNATURE GAUCHE ────────────────────────────────
+    sx = W*0.28
+    # Tracé cursif
+    c.setStrokeColor(C_BODY)
+    c.setLineWidth(1.6)
+    c.setLineCap(1)
+    p = c.beginPath()
+    p.moveTo(sx-17*mm, sep_y+9*mm)
+    p.curveTo(sx-9*mm, sep_y+14*mm, sx+1*mm, sep_y+7*mm, sx+8*mm, sep_y+12*mm)
+    p.curveTo(sx+13*mm, sep_y+15*mm, sx+15*mm, sep_y+8*mm, sx+17*mm, sep_y+10*mm)
+    c.drawPath(p, stroke=1, fill=0)
+    p2 = c.beginPath()
+    p2.moveTo(sx-11*mm, sep_y+6*mm)
+    p2.curveTo(sx-3*mm, sep_y+10*mm, sx+5*mm, sep_y+4*mm, sx+11*mm, sep_y+8*mm)
+    c.drawPath(p2, stroke=1, fill=0)
+
+    c.setStrokeColor(C_TEAL)
+    c.setLineWidth(0.7)
+    c.line(sx-20*mm, sep_y, sx+20*mm, sep_y)
+    c.setFillColor(C_BODY)
+    c.setFont('Helvetica-Bold', 7.5)
+    c.drawCentredString(sx, sep_y-5*mm, 'Dr. Sarah Martin')
+    c.setFillColor(C_TEAL)
+    c.setFont('Helvetica', 6.5)
+    c.drawCentredString(sx, sep_y-10*mm, 'Directrice des Études')
+
+    # ── CACHET OFFICIEL ─────────────────────────────────
+    seax = W*0.72
+    seay = sep_y + 3*mm
+    ro, ri = 17*mm, 12*mm
+
+    c.setFillColor(colors.HexColor('#EEF5FB'))
+    c.setStrokeColor(C_BODY)
+    c.setLineWidth(1.8)
+    c.circle(seax, seay, ro, fill=1, stroke=1)
+
+    c.setStrokeColor(C_TEAL)
+    c.setLineWidth(0.8)
+    c.circle(seax, seay, ri, fill=0, stroke=1)
+
+    c.setStrokeColor(C_ACC)
+    c.setLineWidth(0.4)
+    c.setDash([1.5, 2.5])
+    c.circle(seax, seay, ro-3*mm, fill=0, stroke=1)
+    c.setDash([])
+
+    lp = _logo()
+    if lp:
+        try:
+            lsz = 14*mm
+            c.drawImage(ImageReader(lp), seax-lsz/2, seay-lsz/2+2*mm,
+                        width=lsz, height=lsz, mask='auto', preserveAspectRatio=True)
+        except Exception as e:
+            print(f"⚠ Seal logo draw error: {e}")
+            c.setFillColor(C_BODY)
+            c.setFont('Helvetica-Bold', 9)
+            c.drawCentredString(seax, seay+1*mm, 'SC')
+    else:
+        c.setFillColor(C_BODY)
+        c.setFont('Helvetica-Bold', 9)
+        c.drawCentredString(seax, seay+1*mm, 'SC')
+
+    c.setFillColor(C_BODY)
+    c.setFont('Helvetica-Bold', 5.5)
+    c.drawCentredString(seax, seay+11*mm, 'SMARTCERT UNIVERSITY')
+    c.setFillColor(C_TEAL)
+    c.setFont('Helvetica', 5)
+    c.drawCentredString(seax, seay-10*mm, 'OFFICIEL · BLOCKCHAIN')
+
+    c.setFillColor(C_GOLD)
+    c.setFont('Helvetica-Bold', 7)
+    c.drawCentredString(seax-11*mm, seay-1*mm, '*')
+    c.drawCentredString(seax+11*mm, seay-1*mm, '*')
+
+    # ── NOTE AUTH ───────────────────────────────────────
+    c.setFillColor(colors.HexColor('#6A8FAA'))
+    c.setFont('Helvetica', 7.5)
+    c.drawCentredString(W/2, sep_y-20*mm,
+        'Ce certificat est authentifié par la blockchain Ethereum et ne peut être falsifié.')
+
+    # ── FOOTER BLOCKCHAIN ───────────────────────────────
+    bh = cert.get('blockchain_hash','')
+    c.setFillColor(C_BLUE)
+    c.rect(14*mm, 14*mm, W-28*mm, 13*mm, fill=1, stroke=0)
+
+    c.setFillColor(C_ACC)
+    c.setFont('Helvetica-Bold', 6.5)
+    c.drawString(18*mm, 23*mm, 'SHA-256:')
+    c.setFillColor(C_PALE)
+    c.setFont('Helvetica', 6)
+    h_disp = (bh[:68]+'...') if len(bh) > 68 else (bh or 'Non disponible')
+    c.drawString(34*mm, 23*mm, h_disp)
+    c.setFillColor(colors.HexColor('#7BBDE8'))
+    c.setFont('Helvetica', 5.5)
+    c.drawString(18*mm, 18*mm, f'ID: {cid}')
+    c.drawRightString(W-18*mm, 18*mm, 'smartcert.app/verify')
 
     c.showPage()
     c.save()
-    buffer.seek(0)
-    return buffer
+    buf.seek(0)
+    return buf
 
-
-# ── Couches graphiques ────────────────────────────────────
-
-def _draw_background(c, W, H):
-    """Fond dégradé bleu marine."""
-    # Rectangle de fond principal
-    c.setFillColor(C_NAVY)
-    c.rect(0, 0, W, H, fill=1, stroke=0)
-
-    # Bande décorative haute
-    c.setFillColor(C_BLUE1)
-    c.rect(0, H - 110*mm, W, 110*mm, fill=1, stroke=0)
-
-    # Bande décorative basse
-    c.setFillColor(C_BLUE1)
-    c.rect(0, 0, W, 28*mm, fill=1, stroke=0)
-
-    # Cercle décoratif (haut gauche)
-    c.setFillColor(colors.HexColor('#0D3A63'))
-    c.circle(0, H, 80*mm, fill=1, stroke=0)
-
-    # Cercle décoratif (bas droit)
-    c.circle(W, 0, 60*mm, fill=1, stroke=0)
-
-
-def _draw_border(c, W, H):
-    """Double bordure élégante."""
-    margin = 12*mm
-    c.setStrokeColor(C_TEAL)
-    c.setLineWidth(2)
-    c.rect(margin, margin, W - 2*margin, H - 2*margin, fill=0, stroke=1)
-
-    inner = margin + 3*mm
-    c.setStrokeColor(C_ACCENT)
-    c.setLineWidth(0.5)
-    c.rect(inner, inner, W - 2*inner, H - 2*inner, fill=0, stroke=1)
-
-
-def _draw_header(c, W, H):
-    """En-tête : logo texte + titre principal."""
-    # ── Logo SmartCert ──────────────────────────────
-    logo_x, logo_y = W/2, H - 38*mm
-    # Cercle fond logo
-    c.setFillColor(C_TEAL)
-    c.circle(logo_x, logo_y, 14*mm, fill=1, stroke=0)
-    # Texte "SC" centré
-    c.setFillColor(C_WHITE)
-    c.setFont('Helvetica-Bold', 18)
-    c.drawCentredString(logo_x, logo_y - 3*mm, 'SC')
-
-    # ── Nom de l'institution ─────────────────────────
-    c.setFillColor(C_PALE)
-    c.setFont('Helvetica-Bold', 11)
-    c.drawCentredString(W/2, H - 58*mm, 'SMARTCERT UNIVERSITY')
-
-    c.setFillColor(C_ACCENT)
-    c.setFont('Helvetica', 7)
-    c.drawCentredString(W/2, H - 64*mm, 'BLOCKCHAIN CERTIFICATE AUTHORITY  ·  ETHEREUM TESTNET')
-
-    # ── Ligne séparatrice ────────────────────────────
-    sep_y = H - 72*mm
-    c.setStrokeColor(C_TEAL)
-    c.setLineWidth(1)
-    c.line(30*mm, sep_y, W - 30*mm, sep_y)
-
-    # ── Titre "CERTIFICAT DE RÉUSSITE" ───────────────
-    c.setFillColor(C_WHITE)
-    c.setFont('Helvetica-Bold', 22)
-    c.drawCentredString(W/2, H - 85*mm, 'CERTIFICAT DE RÉUSSITE')
-
-    c.setFillColor(C_ACCENT)
-    c.setFont('Helvetica', 8)
-    c.drawCentredString(W/2, H - 92*mm, 'CERTIFICATE OF ACHIEVEMENT')
-
-
-def _draw_body(c, W, H, cert):
-    """Corps du certificat : bénéficiaire, programme, détails."""
-    name    = cert.get('recipient_name', '—')
-    program = cert.get('program', '—')
-    inst    = cert.get('institution', 'SmartCert University')
-    date    = (cert.get('issue_date') or '—').split('T')[0]
-    status  = cert.get('status', 'Vérifié')
-    cert_id = cert.get('id', '—')
-
-    # ── "Certifie que" ───────────────────────────────
-    c.setFillColor(C_PALE)
-    c.setFont('Helvetica', 10)
-    c.drawCentredString(W/2, H - 106*mm, 'Certifie que')
-
-    # ── Nom du bénéficiaire ──────────────────────────
-    # Choisir taille de police adaptée à la longueur du nom
-    name_font_size = 28 if len(name) <= 25 else (22 if len(name) <= 35 else 18)
-    c.setFillColor(C_WHITE)
-    c.setFont('Helvetica-Bold', name_font_size)
-    c.drawCentredString(W/2, H - 120*mm, name)
-
-    # Ligne sous le nom
-    c.setStrokeColor(C_GOLD)
-    c.setLineWidth(1.5)
-    name_w = c.stringWidth(name, 'Helvetica-Bold', name_font_size)
-    c.line(W/2 - name_w/2, H - 123*mm, W/2 + name_w/2, H - 123*mm)
-
-    # ── "a complété avec succès le programme" ────────
-    c.setFillColor(C_PALE)
-    c.setFont('Helvetica', 9)
-    c.drawCentredString(W/2, H - 133*mm, 'a complété avec succès le programme')
-
-    # ── Nom du programme ─────────────────────────────
-    prog_font = 16 if len(program) <= 40 else 13
-    c.setFillColor(C_ACCENT)
-    c.setFont('Helvetica-Bold', prog_font)
-    c.drawCentredString(W/2, H - 145*mm, program)
-
-    # ── Institution ──────────────────────────────────
-    c.setFillColor(C_PALE)
-    c.setFont('Helvetica', 9)
-    c.drawCentredString(W/2, H - 155*mm, f'délivré par  {inst}')
-
-    # ── Séparateur ───────────────────────────────────
-    sep_y2 = H - 167*mm
-    c.setStrokeColor(colors.HexColor('#1A4A6A'))
-    c.setLineWidth(1)
-    c.line(25*mm, sep_y2, W - 25*mm, sep_y2)
-
-    # ── Grille d'infos (3 colonnes) ──────────────────
-    grid_y  = H - 180*mm
-    cols    = [W*0.22, W*0.5, W*0.78]   # centres des 3 colonnes
-    labels  = ["Date d'émission", "Identifiant", "Statut"]
-    values  = [date, cert_id, status]
-    v_colors = [C_WHITE, C_ACCENT, C_GREEN if status == 'Vérifié' else C_PALE]
-
-    for cx, lbl, val, vcol in zip(cols, labels, values, v_colors):
-        # Label
-        c.setFillColor(C_PALE)
-        c.setFont('Helvetica', 7)
-        c.drawCentredString(cx, grid_y, lbl.upper())
-        # Valeur
-        c.setFillColor(vcol)
-        val_font = 8 if len(val) > 14 else 10
-        c.setFont('Helvetica-Bold', val_font)
-        c.drawCentredString(cx, grid_y - 7*mm, val)
-
-    # ── Tampon "VÉRIFIÉ" ─────────────────────────────
-    stamp_x, stamp_y = W - 50*mm, H - 170*mm
-    c.saveState()
-    c.translate(stamp_x, stamp_y)
-    c.rotate(15)
-    c.setStrokeColor(C_GREEN)
-    c.setLineWidth(2.5)
-    c.setFillColor(colors.HexColor('#0B2E1A'))
-    c.roundRect(-22*mm, -8*mm, 44*mm, 16*mm, 4*mm, fill=1, stroke=1)
-    c.setFillColor(C_GREEN)
-    c.setFont('Helvetica-Bold', 12)
-    c.drawCentredString(0, -3*mm, '✓  VÉRIFIÉ')
-    c.restoreState()
-
-    # ── Zone signature ────────────────────────────────
-    sig_y = H - 210*mm
-    sig_x = W * 0.27
-    c.setStrokeColor(C_TEAL)
-    c.setLineWidth(0.8)
-    c.line(sig_x - 28*mm, sig_y, sig_x + 28*mm, sig_y)
-    c.setFillColor(C_PALE)
-    c.setFont('Helvetica', 7)
-    c.drawCentredString(sig_x, sig_y - 5*mm, 'Directeur des Études')
-    c.drawCentredString(sig_x, sig_y - 10*mm, inst)
-
-    # Sceau (cercle)
-    seal_x = W * 0.73
-    c.setStrokeColor(C_TEAL)
-    c.setLineWidth(1)
-    c.circle(seal_x, sig_y - 5*mm, 15*mm, fill=0, stroke=1)
-    c.setFillColor(C_TEAL)
-    c.setFont('Helvetica-Bold', 6)
-    c.drawCentredString(seal_x, sig_y - 3*mm, 'SCEAU OFFICIEL')
-    c.drawCentredString(seal_x, sig_y - 9*mm, 'SMARTCERT')
-
-
-def _draw_blockchain_footer(c, W, H, cert):
-    """Pied de page blockchain : hash + instructions de vérification."""
-    bh   = cert.get('blockchain_hash', '')
-    txh  = cert.get('tx_hash', '')
-    fh   = 18*mm    # hauteur de la zone footer
-
-    # Fond de la zone blockchain
-    c.setFillColor(colors.HexColor('#061422'))
-    c.rect(15*mm, 15*mm, W - 30*mm, fh, fill=1, stroke=0)
-    c.setStrokeColor(C_TEAL)
-    c.setLineWidth(0.5)
-    c.rect(15*mm, 15*mm, W - 30*mm, fh, fill=0, stroke=1)
-
-    # Icône chaîne
-    c.setFillColor(C_ACCENT)
-    c.setFont('Helvetica-Bold', 8)
-    c.drawString(18*mm, 28*mm, '⛓  BLOCKCHAIN HASH (SHA-256)')
-
-    # Hash tronqué
-    c.setFillColor(C_TEAL)
-    c.setFont('Helvetica', 6.5)
-    hash_display = (bh[:72] + '…') if len(bh) > 72 else bh
-    c.drawString(18*mm, 23*mm, hash_display or 'Non disponible')
-
-    # Tx hash
-    if txh:
-        c.setFillColor(colors.HexColor('#3A6A8A'))
-        c.setFont('Helvetica', 6)
-        c.drawString(18*mm, 18.5*mm, f'TX: {txh[:60]}')
-
-    # URL vérification (droite)
-    c.setFillColor(C_PALE)
-    c.setFont('Helvetica', 6.5)
-    c.drawRightString(W - 18*mm, 23*mm, 'Vérifiez sur : smartcert.app/verify')
-    c.drawRightString(W - 18*mm, 18.5*mm, f'ID : {cert.get("id","—")}')
-
-
-def _draw_decorations(c, W, H):
-    """Éléments décoratifs : coins, lignes."""
-    corner = 8*mm
-    margin = 12*mm
-    c.setStrokeColor(C_GOLD)
-    c.setLineWidth(1.5)
-    # Coin haut gauche
-    c.line(margin, H - margin, margin + corner, H - margin)
-    c.line(margin, H - margin, margin, H - margin - corner)
-    # Coin haut droit
-    c.line(W - margin, H - margin, W - margin - corner, H - margin)
-    c.line(W - margin, H - margin, W - margin, H - margin - corner)
-    # Coin bas gauche
-    c.line(margin, margin, margin + corner, margin)
-    c.line(margin, margin, margin, margin + corner)
-    # Coin bas droit
-    c.line(W - margin, margin, W - margin - corner, margin)
-    c.line(W - margin, margin, W - margin, margin + corner)
-
-
-# ═══════════════════════════════════════════════════════════
-#  2. ENVOI EMAIL
-# ═══════════════════════════════════════════════════════════
 
 def send_certificate_email(cert: dict, pdf_bytes: io.BytesIO) -> bool:
-    """
-    Envoie un email HTML au bénéficiaire avec le certificat PDF en pièce jointe.
-
-    Retourne True si l'envoi a réussi, False sinon.
-    """
-    recipient_email = cert.get('email')
-    if not recipient_email:
-        print("⚠ Pas d'email — envoi annulé")
-        return False
-
+    email = cert.get('email')
+    if not email: return False
     if not SMTP_PASSWORD:
-        print("⚠ SMTP_PASSWORD non configuré — envoi simulé (mode démo)")
-        return True   # Simule succès en mode démo
-
+        # Fix P15: don't pretend the email was sent when SMTP is not configured
+        print("Mode demo — SMTP non configuré, email non envoyé")
+        return False
     try:
         msg = MIMEMultipart('alternative')
-        msg['Subject'] = f"🎓 Votre certificat SmartCert — {cert.get('program', '')}"
+        msg['Subject'] = f"Votre certificat SmartCert — {cert.get('program','')}"
         msg['From']    = f"{FROM_NAME} <{SMTP_USER}>"
-        msg['To']      = recipient_email
-
-        # ── Corps HTML ────────────────────────────────
-        html_body = _build_email_html(cert)
-        msg.attach(MIMEText(html_body, 'html', 'utf-8'))
-
-        # ── Pièce jointe PDF ──────────────────────────
+        msg['To']      = email
+        msg.attach(MIMEText(_email_html(cert), 'html', 'utf-8'))
         pdf_bytes.seek(0)
-        part = MIMEBase('application', 'pdf')
+        part = MIMEBase('application','pdf')
         part.set_payload(pdf_bytes.read())
         encoders.encode_base64(part)
-        filename = f"certificat_{cert.get('id', 'smartcert')}.pdf"
-        part.add_header('Content-Disposition', f'attachment; filename="{filename}"')
+        part.add_header('Content-Disposition', f'attachment; filename="certificat_{cert.get("id","smartcert")}.pdf"')
         msg.attach(part)
-
-        # ── Envoi SMTP ────────────────────────────────
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
-            server.ehlo()
-            server.starttls()
-            server.login(SMTP_USER, SMTP_PASSWORD)
-            server.sendmail(SMTP_USER, recipient_email, msg.as_string())
-
-        print(f"✅ Email envoyé → {recipient_email}")
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as s:
+            s.ehlo(); s.starttls(); s.login(SMTP_USER, SMTP_PASSWORD)
+            s.sendmail(SMTP_USER, email, msg.as_string())
+        print(f"Email envoye -> {email}")
         return True
-
-    except smtplib.SMTPAuthenticationError:
-        print("❌ Erreur SMTP : authentification échouée — vérifiez SMTP_USER et SMTP_PASSWORD")
-        return False
-    except smtplib.SMTPException as e:
-        print(f"❌ Erreur SMTP : {e}")
-        return False
     except Exception as e:
-        print(f"❌ Erreur inattendue lors de l'envoi : {e}")
+        print(f"Erreur email: {e}")
         return False
 
 
-def _build_email_html(cert: dict) -> str:
-    """Construit le corps HTML de l'email de notification."""
-    name    = cert.get('recipient_name', 'Étudiant')
-    program = cert.get('program', '—')
-    inst    = cert.get('institution', 'SmartCert University')
-    date    = (cert.get('issue_date') or '—').split('T')[0]
-    cert_id = cert.get('id', '—')
-    bh      = cert.get('blockchain_hash', '—')
-
-    return f"""
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Votre Certificat SmartCert</title>
-</head>
-<body style="margin:0;padding:0;background:#001D39;font-family:'Segoe UI',Arial,sans-serif">
-
-  <!-- Wrapper -->
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#001D39;padding:32px 16px">
-    <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
-
-        <!-- HEADER -->
-        <tr>
-          <td style="background:linear-gradient(135deg,#0A4174,#4E8EA2);border-radius:16px 16px 0 0;padding:36px 32px;text-align:center">
-            <div style="width:60px;height:60px;background:rgba(255,255,255,.15);border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px;line-height:60px">🎓</div>
-            <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:800;letter-spacing:-0.5px">SmartCert</h1>
-            <p style="margin:6px 0 0;color:#BDD8E9;font-size:12px;letter-spacing:2px;text-transform:uppercase">Blockchain Certificate Authority</p>
-          </td>
-        </tr>
-
-        <!-- BODY -->
-        <tr>
-          <td style="background:#0A2E50;padding:36px 32px">
-
-            <p style="margin:0 0 8px;color:#BDD8E9;font-size:14px">Bonjour <strong style="color:#7BBDE8">{name}</strong>,</p>
-            <p style="margin:0 0 24px;color:#6EA2B3;font-size:14px;line-height:1.7">
-              Félicitations ! Votre certificat numérique a été émis avec succès et enregistré de manière permanente sur la blockchain Ethereum.
-            </p>
-
-            <!-- Carte certificat -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="background:#001D39;border:1px solid rgba(78,142,162,0.3);border-radius:12px;overflow:hidden;margin-bottom:24px">
-              <tr>
-                <td style="background:rgba(16,185,129,0.08);border-bottom:1px solid rgba(16,185,129,0.2);padding:14px 20px">
-                  <span style="color:#10b981;font-weight:700;font-size:13px">✅ Certificat Authentique et Vérifié</span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding:20px">
-                  <table width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                      <td style="padding:8px 0;border-bottom:1px solid rgba(78,142,162,0.1)">
-                        <span style="color:#6EA2B3;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Bénéficiaire</span><br>
-                        <strong style="color:#E8F4FF;font-size:14px">{name}</strong>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding:8px 0;border-bottom:1px solid rgba(78,142,162,0.1)">
-                        <span style="color:#6EA2B3;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Programme</span><br>
-                        <strong style="color:#E8F4FF;font-size:14px">{program}</strong>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding:8px 0;border-bottom:1px solid rgba(78,142,162,0.1)">
-                        <span style="color:#6EA2B3;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Institution</span><br>
-                        <strong style="color:#E8F4FF;font-size:14px">{inst}</strong>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding:8px 0;border-bottom:1px solid rgba(78,142,162,0.1)">
-                        <span style="color:#6EA2B3;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Date d'émission</span><br>
-                        <strong style="color:#E8F4FF;font-size:14px">{date}</strong>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style="padding:8px 0">
-                        <span style="color:#6EA2B3;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Identifiant Unique</span><br>
-                        <strong style="color:#7BBDE8;font-family:monospace;font-size:13px">{cert_id}</strong>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-
-            <!-- Hash blockchain -->
-            <div style="background:#000d1a;border:1px solid rgba(78,142,162,0.2);border-radius:8px;padding:14px;margin-bottom:24px">
-              <p style="margin:0 0 6px;color:#6EA2B3;font-size:10px;text-transform:uppercase;letter-spacing:1px">⛓ Hash Blockchain (SHA-256)</p>
-              <p style="margin:0;color:#4E8EA2;font-family:monospace;font-size:10px;word-break:break-all;line-height:1.8">{bh}</p>
-            </div>
-
-            <!-- CTA -->
-            <table width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td align="center">
-                  <a href="http://127.0.0.1:5000/certificates/verify/{cert_id}"
-                     style="display:inline-block;background:linear-gradient(135deg,#0A4174,#4E8EA2);color:#ffffff;text-decoration:none;padding:13px 32px;border-radius:10px;font-weight:700;font-size:14px">
-                    🔍 Vérifier mon certificat en ligne
-                  </a>
-                </td>
-              </tr>
-            </table>
-
-            <p style="margin:24px 0 0;color:#4E8EA2;font-size:12px;text-align:center;line-height:1.7">
-              Le certificat PDF est joint à cet email.<br>
-              Conservez cet identifiant : <strong style="color:#7BBDE8">{cert_id}</strong>
-            </p>
-
-          </td>
-        </tr>
-
-        <!-- FOOTER -->
-        <tr>
-          <td style="background:#061422;border-radius:0 0 16px 16px;padding:20px 32px;text-align:center">
-            <p style="margin:0;color:#1A4A6A;font-size:11px">SmartCert · Blockchain Certificate Authority · Ethereum Testnet</p>
-            <p style="margin:6px 0 0;color:#1A3A5A;font-size:10px">Cet email a été généré automatiquement. Ne pas répondre.</p>
-          </td>
-        </tr>
-
-      </table>
+def _email_html(cert):
+    n  = cert.get('recipient_name','Étudiant')
+    pr = cert.get('program','—')
+    ins= cert.get('institution','SmartCert University')
+    d  = (cert.get('issue_date') or '—').split('T')[0]
+    cid= cert.get('id','—')
+    bh = cert.get('blockchain_hash','—')
+    return f"""<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#001D39;font-family:Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px">
+<tr><td style="background:linear-gradient(135deg,#0A4174,#4E8EA2);border-radius:16px 16px 0 0;padding:32px;text-align:center">
+  <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px">
+    <img src="https://smartcert.app/logo.png" alt="SmartCert" style="width:45px;height:30px;object-fit:contain">
+    <h1 style="margin:0;color:white;font-size:24px">SmartCert</h1>
+  </div>
+  <p style="margin:6px 0 0;color:#BDD8E9;font-size:11px;letter-spacing:2px">BLOCKCHAIN CERTIFICATE AUTHORITY</p>
+</td></tr>
+<tr><td style="background:#0A2E50;padding:32px">
+  <p style="color:#BDD8E9;font-size:14px">Bonjour <strong style="color:#7BBDE8">{n}</strong>,</p>
+  <p style="color:#6EA2B3;font-size:13px;line-height:1.7">Votre certificat a été émis et enregistré sur la blockchain Ethereum.</p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#001D39;border:1px solid rgba(78,142,162,.3);border-radius:10px;margin:16px 0">
+    <tr><td style="background:rgba(16,185,129,.08);border-bottom:1px solid rgba(16,185,129,.2);padding:12px 18px">
+      <span style="color:#10b981;font-weight:700;font-size:13px">✅ Certificat Authentique et Verifie</span>
+    </td></tr>
+    <tr><td style="padding:18px">
+      <p style="margin:0 0 8px;color:#6EA2B3;font-size:10px;text-transform:uppercase">Beneficiaire</p>
+      <p style="margin:0 0 14px;color:#E8F4FF;font-size:15px;font-weight:700">{n}</p>
+      <p style="margin:0 0 8px;color:#6EA2B3;font-size:10px;text-transform:uppercase">Programme</p>
+      <p style="margin:0 0 14px;color:#E8F4FF;font-size:14px">{pr}</p>
+      <p style="margin:0 0 8px;color:#6EA2B3;font-size:10px;text-transform:uppercase">Institution</p>
+      <p style="margin:0 0 14px;color:#E8F4FF;font-size:13px">{ins}</p>
+      <p style="margin:0 0 8px;color:#6EA2B3;font-size:10px;text-transform:uppercase">Date · Identifiant</p>
+      <p style="margin:0;color:#7BBDE8;font-family:monospace;font-size:12px">{d} · {cid}</p>
     </td></tr>
   </table>
-</body>
-</html>"""
+  <div style="background:#000d1a;border:1px solid rgba(78,142,162,.2);border-radius:8px;padding:12px;margin-bottom:20px">
+    <p style="margin:0 0 5px;color:#6EA2B3;font-size:10px;text-transform:uppercase">Hash Blockchain SHA-256</p>
+    <p style="margin:0;color:#4E8EA2;font-family:monospace;font-size:9px;word-break:break-all">{bh}</p>
+  </div>
+  <div style="text-align:center;margin-bottom:16px">
+    <div style="display:inline-block;border:1px solid #C9A03D;border-radius:8px;padding:8px 16px">
+      <span style="color:#C9A03D;font-size:11px">🎓 Vérifié sur Blockchain Ethereum</span>
+    </div>
+  </div>
+  <p style="color:#4E8EA2;font-size:12px;text-align:center">PDF joint a cet email · ID : <strong style="color:#7BBDE8">{cid}</strong></p>
+</td></tr>
+<tr><td style="background:#061422;border-radius:0 0 16px 16px;padding:14px;text-align:center">
+  <p style="margin:0;color:#1A4A6A;font-size:10px">SmartCert · Blockchain Certificate Authority · Ethereum Testnet</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>"""
