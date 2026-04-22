@@ -43,7 +43,7 @@
       <div class="role-toggle" id="roleToggle">
         <div class="role-toggle-slider" id="toggleSlider"></div>
         <button class="role-btn active" id="btnAdmin" onclick="switchRole('admin')">
-          <i class="fas fa-shield-halved"></i> Administrateur
+          <i class="fas fa-shield-halved"></i> moderateur
         </button>
         <button class="role-btn" id="btnCandidate" onclick="switchRole('candidate')">
           <i class="fas fa-user-graduate"></i> Candidat
@@ -58,7 +58,7 @@
         </div>
 
         <div id="loginBadge" class="role-badge admin">
-          <i class="fas fa-shield-halved"></i> <span id="loginBadgeText">Accès Administrateur</span>
+          <i class="fas fa-shield-halved"></i> <span id="loginBadgeText">Accès moderateur</span>
         </div>
 
         <div class="form-alert err" id="loginAlert">
@@ -106,11 +106,11 @@
 
         <div class="form-header">
           <h2>Créer un compte</h2>
-          <p id="regSubtitle">Inscription espace administrateur</p>
+          <p id="regSubtitle">Inscription espace moderateur</p>
         </div>
 
         <div id="regBadge" class="role-badge admin">
-          <i class="fas fa-shield-halved"></i> <span id="regBadgeText">Compte Administrateur</span>
+          <i class="fas fa-shield-halved"></i> <span id="regBadgeText">Compte moderateur</span>
         </div>
 
         <div class="form-alert err" id="regAlertErr">
@@ -145,7 +145,6 @@
             <label class="form-label" for="regDob">Date de naissance</label>
             <div class="input-wrap" style="margin-bottom:0">
               <i class="fas fa-calendar input-icon"></i>
-              <!-- FIX 2 : id="regDob" ajouté pour ciblage JS fiable -->
               <input type="date" id="regDob">
             </div>
           </div>
@@ -222,7 +221,7 @@
         </div>
 
         <button class="btn-submit" id="btnRegister" onclick="doRegister()">
-          <i class="fas fa-user-plus"></i> <span id="btnRegisterText">Créer mon compte administrateur</span>
+          <i class="fas fa-user-plus"></i> <span id="btnRegisterText">Créer mon compte moderateur</span>
         </button>
 
         <div style="margin-top:20px;text-align:center;">
@@ -242,8 +241,7 @@
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- FIX 3 : s.js → login.js (nom correct du fichier JS) -->
-  <script src="s.js"></script>
+  <script src="login.js"></script>
 </body>
 
 </html>
