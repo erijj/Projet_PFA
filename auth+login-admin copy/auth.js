@@ -19,7 +19,8 @@
 const Auth = (() => {
 
   // ─── CONFIG ──────────────────────────────────────────────
-  const API_BASE    = 'http://127.0.0.1:5000';
+  // Fix P10: read API URL from localStorage so it matches the configurable setting
+  const API_BASE    = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
   const TOKEN_KEY   = 'smartcert_token';
   const USER_KEY    = 'smartcert_user';
   const EXPIRY_KEY  = 'smartcert_expiry';
