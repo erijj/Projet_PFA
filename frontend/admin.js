@@ -61,7 +61,8 @@ async function requireAuthOrRedirect() {
     if (nameEl)   nameEl.textContent   = user.name || (user.email ? user.email.split('@')[0] : 'Admin');
     if (roleEl)   roleEl.textContent   = user.role === 'admin' ? 'Administrateur' : 'Étudiant';
     if (avatarEl) avatarEl.textContent = (user.email || 'A')[0].toUpperCase();
-  } catch {
+  } catch (err) {
+    console.error('Auth error:', err);
     window.location.href = 'login.html';
   }
 }

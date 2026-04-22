@@ -101,7 +101,8 @@ async function doLogin() {
     } else {
       window.location.href = 'verif.html';
     }
-  } catch {
+  } catch (err) {
+    console.error('Login error:', err);
     showAlert('loginAlert', 'Impossible de joindre le backend.');
   }
 }
