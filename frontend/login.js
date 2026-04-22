@@ -1,4 +1,5 @@
 let currentRole = 'admin';
+const API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
 
 function switchRole(role) {
   currentRole = role;
@@ -71,7 +72,7 @@ function hideAlert(id) {
   document.getElementById(id).classList.remove('show');
 }
 
-function doLogin() {
+async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPass').value;
   hideAlert('loginAlert');
@@ -83,11 +84,25 @@ function doLogin() {
     showAlert('loginAlert', 'Adresse e-mail invalide.');
     return;
   }
-  // Simulate login — replace with real API call
-  if (currentRole === 'admin') {
-    window.location.href = 'dashboard_admin.html';
-  } else {
-    window.location.href = 'dashboard_candidat.html';
+  try {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      showAlert('loginAlert', data.error || 'Identifiants incorrects.');
+      return;
+    }
+    localStorage.setItem('smartcert_token', data.token);
+    if (data.user.role === 'admin') {
+      window.location.href = 'dashboard-admin.html';
+    } else {
+      window.location.href = 'verif.html';
+    }
+  } catch {
+    showAlert('loginAlert', 'Impossible de joindre le backend.');
   }
 }
 
@@ -123,9 +138,8 @@ function doRegister() {
   }
   if (currentRole === 'admin') {
     const inst = document.getElementById('regInstitution').value.trim();
-    const role = document.getElementById('regRole').value;
-    if (!inst || !role) {
-      showAlert('regAlertErr', 'Veuillez renseigner l\'institution et le rôle.');
+    if (!inst) {
+      showAlert('regAlertErr', 'Veuillez renseigner l\'institution.');
       return;
     }
   } else {

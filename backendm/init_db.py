@@ -111,7 +111,7 @@ def compute_blockchain_hash(data: dict) -> str: # le nom de la fonction est chan
 # توليد tx_hash وهمي (قبل ربط Ethereum حقيقي)
 
 def fake_tx_hash(blockchain_hash: str) -> str:
-    return "0xtx_" + hashlib.md5(blockchain_hash.encode()).hexdigest()
+    return "0xtx_" + hashlib.sha256(blockchain_hash.encode()).hexdigest()[:32]
 
 
 # الفونكسيون الرئيسية
