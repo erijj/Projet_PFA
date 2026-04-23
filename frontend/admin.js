@@ -44,7 +44,8 @@ async function requireAuthOrRedirect() {
     const res  = await fetch(`${API_BASE}/certificates`, { credentials: 'include' });
     const data = await res.json();
     if (!data.authenticated) {
-      window.location.href = '../frontend/login.html';
+      window.location.href = 'login.html';
+
       return;
     }
     const user = data.user;

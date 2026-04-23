@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import uuid
+from werkzeug.security import generate_password_hash
 from datetime import datetime
 """الأصلي — فيه زيادة imports
 from datetime import datetime, timedelta  # timedelta ما تستعملتش
@@ -44,6 +45,16 @@ CREATE TABLE IF NOT EXISTS audit_log (
     timestamp    TEXT DEFAULT (datetime('now')),
     details      TEXT
 );
+
+CREATE TABLE IF NOT EXISTS users (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    email            TEXT UNIQUE NOT NULL,
+    password_hash    TEXT NOT NULL,
+    role             TEXT NOT NULL,
+    name             TEXT NOT NULL,
+    created_at       TEXT DEFAULT (datetime('now'))
+);
+
 """
 
 
@@ -117,13 +128,14 @@ def fake_tx_hash(blockchain_hash: str) -> str:
 # الفونكسيون الرئيسية
 
 def init_db():
-    print(f"📁 Base de données : {DATABASE}")
+    print(f"Base de donnees : {DATABASE}")
     conn   = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
     # إنشاء الجدولين
     cursor.executescript(SCHEMA)
-    print("✅ Tables créées (certificates + audit_log)")
+    print("Tables creees (certificates + audit_log + users)")
+
 
     # إدخال البيانات التجريبية
     inserted = 0
@@ -161,7 +173,8 @@ def init_db():
                 tx_hash,
             ))
             inserted += 1
-            print(f"  ➕ {cert_id} — {cert['recipient_name']} [{cert['status']}]")
+            print(f"  + {cert_id} - {cert['recipient_name']} [{cert['status']}]")
+
 
             # سجل في audit_log
             cursor.execute("""
@@ -177,10 +190,27 @@ def init_db():
         except Exception as e:
             print(f"  ⚠ Erreur : {e}")
 
+    # إدخال المستخدمين الافتراضيين
+    DEFAULT_USERS = [
+        ("admin@smartcert.tn", generate_password_hash("admin123"), "admin", "Administrateur SmartCert"),
+        ("etudiant@smartcert.tn", generate_password_hash("etudiant123"), "etudiant", "Étudiant Démo")
+    ]
+    
+    for email, pwd_hash, role, name in DEFAULT_USERS:
+        try:
+            cursor.execute("""
+                INSERT OR IGNORE INTO users (email, password_hash, role, name)
+                VALUES (?, ?, ?, ?)
+            """, (email, pwd_hash, role, name))
+        except Exception as e:
+            print(f"  ! Erreur lors de l'insertion de l'utilisateur {email} : {e}")
+
     conn.commit()
     conn.close()
-    print(f"\n🎉 Terminé : {inserted} certificats insérés dans certificates.db")
-    print("▶ Lancez le backend : python app.py")
+
+    print(f"\n Termine : {inserted} certificats inseres dans certificates.db")
+
+    print("Launch the backend : python app.py")
 
 
 if __name__ == '__main__':

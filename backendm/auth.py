@@ -31,19 +31,20 @@ JWT_EXPIRY_H = int(os.getenv("JWT_EXPIRY_HOURS", 8))
 DATABASE     = os.path.join(os.path.dirname(os.path.abspath(__file__)), "certificates.db")
 
 # ─── UTILISATEURS ─────────────────────────────────────────
-# Fix P4: passwords are stored as werkzeug hashes (pbkdf2:sha256), not plaintext
-USERS: dict = {
-    "admin@smartcert.tn": {
-        "password_hash": generate_password_hash("admin123"),
-        "role":          "admin",
-        "name":          "Administrateur SmartCert",
-    },
-    "etudiant@smartcert.tn": {
-        "password_hash": generate_password_hash("etudiant123"),
-        "role":          "etudiant",
-        "name":          "Étudiant Démo",
-    },
-}
+# Les utilisateurs sont désormais gérés dans la base de données (table 'users').
+
+def get_user_by_email(email: str):
+    """Récupère un utilisateur depuis la base de données."""
+    try:
+        conn = sqlite3.connect(DATABASE)
+        conn.row_factory = sqlite3.Row
+        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        conn.close()
+        return dict(user) if user else None
+    except sqlite3.Error as e:
+        print(f"Database error in get_user_by_email: {e}")
+        return None
+
 
 
 # ═══════════════════════════════════════════════════════════
@@ -147,11 +148,12 @@ def login():
     if not email or not password:
         return jsonify({"error": "Email et mot de passe requis"}), 400
 
-    user = USERS.get(email)
-    # Fix P4: use check_password_hash instead of plaintext comparison
+    user = get_user_by_email(email)
+    
     if not user or not check_password_hash(user["password_hash"], password):
         time.sleep(0.4)  # délai anti-brute-force
         return jsonify({"error": "Email ou mot de passe incorrect", "code": "invalid_credentials"}), 401
+
 
     token = generate_token(email, user["role"])
     ip    = request.remote_addr or "unknown"
@@ -183,14 +185,16 @@ def logout():
     return jsonify({"message": "Déconnecté avec succès"})
 
 
-# ─── GET /auth/me ──────────────────────────────────────────
 @auth_bp.route("/me", methods=["GET"])
 @require_auth()
 def me():
     """Retourne le profil de l'utilisateur actuellement connecté."""
     email = g.user.get("email", "")
-    user  = USERS.get(email, {})
-    # Fix P2: include 'authenticated' field so the dashboard can detect a valid session
+    user  = get_user_by_email(email)
+    
+    if not user:
+        return jsonify({"error": "Utilisateur non trouvé"}), 404
+
     return jsonify({
         "authenticated": True,
         "email":         email,
@@ -202,6 +206,7 @@ def me():
             "name":  user.get("name", ""),
         },
     })
+
 
 
 # ─── GET /auth/verify-token ────────────────────────────────
