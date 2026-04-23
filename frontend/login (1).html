@@ -88,7 +88,7 @@
           window.location.href = '../dashboard/dashboard.html';
         }, 800);
 
-      } catch (err) {
+      } catch {
         errBox.style.display = 'block';
         errMsg.textContent   = 'Backend inaccessible. Vérifiez que Flask tourne sur ' + API_BASE;
         btn.disabled  = false;
