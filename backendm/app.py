@@ -19,7 +19,7 @@ except ImportError:
 from auth import auth_bp, require_auth
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 # Fix P1: register authentication routes (/auth/login, /auth/logout, /auth/me …)
 app.register_blueprint(auth_bp)
@@ -45,6 +45,7 @@ def init_db():
             program         TEXT NOT NULL,
             institution     TEXT DEFAULT 'SmartCert University',
             issue_date      TEXT NOT NULL,
+            director_name   TEXT,
             status          TEXT DEFAULT 'Vérifié',
             blockchain_hash TEXT,
             tx_hash         TEXT,
@@ -59,7 +60,13 @@ def init_db():
             details      TEXT
         );
     """)
-    conn.commit()
+    # Migration: Add director_name if it doesn't exist
+    try:
+        conn.execute("ALTER TABLE certificates ADD COLUMN director_name TEXT")
+        conn.commit()
+    except:
+        pass # Column already exists
+        
     conn.close()
     print("✅ Base de données initialisée")
 
@@ -127,18 +134,7 @@ def chain_status():
         'message':          'Connexion active' if connected else 'Blockchain non disponible',
     })
 
-@app.route('/certificates', methods=['GET'])
-@require_auth()
-def get_certificates():
-    conn = get_db()
-    rows = conn.execute(
-        "SELECT * FROM certificates ORDER BY created_at DESC"
-    ).fetchall()
-    conn.close()
-    return jsonify({
-        'certificates': [row_to_dict(r) for r in rows],
-        'total':        len(rows),
-    })
+
 
 @app.route('/certificates/<cert_id>', methods=['GET'])
 @require_auth()
@@ -163,9 +159,10 @@ def issue_certificate():
         if not data.get(field):
             return jsonify({'error': f'Champ obligatoire manquant : {field}'}), 400
 
-    cert_id     = generate_cert_id()
-    issue_date  = data.get('issue_date') or datetime.now().strftime('%Y-%m-%d')
-    institution = data.get('institution', 'SmartCert University')
+    cert_id       = generate_cert_id()
+    issue_date    = data.get('issue_date') or datetime.now().strftime('%Y-%m-%d')
+    institution   = data.get('institution', 'SmartCert University')
+    director_name = data.get('director_name', 'Directeur des Études')
 
     hash_payload = {
         'id':             cert_id,
@@ -174,6 +171,7 @@ def issue_certificate():
         'program':        data['program'],
         'institution':    institution,
         'issue_date':     issue_date,
+        'director_name':  director_name
     }
     blockchain_hash = compute_hash(hash_payload)
     tx_hash         = record_on_blockchain(blockchain_hash)
@@ -181,27 +179,19 @@ def issue_certificate():
     conn = get_db()
     try:
         conn.execute("""
-            INSERT INTO certificates
-            (id, recipient_name, email, program, institution, issue_date,
-             status, blockchain_hash, tx_hash)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            cert_id,
-            data['recipient_name'],
-            data['email'],
-            data['program'],
-            institution,
-            issue_date,
-            'Vérifié',
-            blockchain_hash,
-            tx_hash,
-        ))
+            INSERT INTO certificates 
+            (id, recipient_name, email, program, institution, issue_date, director_name, status, blockchain_hash, tx_hash)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (cert_id, data['recipient_name'], data['email'], data['program'], institution, issue_date, director_name, 'Vérifié', blockchain_hash, tx_hash))
         conn.commit()
     except Exception as e:
         conn.close()
-        print(f"❌ Erreur création certificat: {e}")
-        return jsonify({'error': 'Erreur interne lors de la création du certificat'}), 500
-    conn.close()
+        print(f"❌ Erreur SQL : {e}")
+        return jsonify({'error': 'Erreur lors de la sauvegarde'}), 500
+    finally:
+        conn.close()
+
+    print(f"✅ Certificat créé : {cert_id}")
 
     cert = {
         'id':              cert_id,
@@ -233,6 +223,22 @@ def issue_certificate():
         'tx_hash':         tx_hash,
         'email_sent':      email_ok,
     }), 201
+
+@app.route('/certificates', methods=['GET'])
+@require_auth()
+def get_certificates():
+    try:
+        conn = get_db()
+        cursor = conn.execute("SELECT * FROM certificates ORDER BY issue_date DESC")
+        rows = cursor.fetchall()
+        result = [row_to_dict(row) for row in rows]
+        print(f"📋 {len(result)} certificats envoyés")
+        return jsonify(result)
+    except Exception as e:
+        print(f"❌ Erreur lecture : {e}")
+        return jsonify([]), 500
+    finally:
+        conn.close()
 
 @app.route('/certificates/verify/<cert_id>', methods=['GET'])
 def verify_certificate(cert_id):

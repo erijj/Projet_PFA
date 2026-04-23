@@ -71,23 +71,55 @@ function hideAlert(id) {
   document.getElementById(id).classList.remove('show');
 }
 
-function doLogin() {
+async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPass').value;
-  hideAlert('loginAlert');
+  const btn = document.querySelector('#viewLogin .btn-submit');
+  const alertId = 'loginAlert';
+
+  hideAlert(alertId);
+
   if (!email || !pass) {
-    showAlert('loginAlert', 'Veuillez remplir tous les champs.');
+    showAlert(alertId, 'Veuillez remplir tous les champs.');
     return;
   }
-  if (!email.includes('@')) {
-    showAlert('loginAlert', 'Adresse e-mail invalide.');
-    return;
-  }
-  // Simulate login — replace with real API call
-  if (currentRole === 'admin') {
-    window.location.href = 'dashboard-admin.html';
-  } else {
-    window.location.href = 'smartcert.html';
+
+  // Visual feedback
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
+  btn.disabled = true;
+
+  try {
+    const API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
+    const response = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // Store token and user info
+      localStorage.setItem('smartcert_token', data.token);
+      localStorage.setItem('smartcert_user', JSON.stringify(data.user));
+
+      // Redirect based on role
+      if (data.user.role === 'admin') {
+        window.location.href = 'dashboard-admin.html';
+      } else {
+        window.location.href = 'dashboard_candidat.html';
+      }
+    } else {
+      showAlert(alertId, data.error || 'Identifiants incorrects');
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    const API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
+    showAlert(alertId, `Impossible de contacter le serveur (${API_BASE}). Vérifiez que le backend est lancé.`);
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
   }
 }
 

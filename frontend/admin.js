@@ -2,8 +2,16 @@
    SmartCert — script.js
    ============================================================ */
 
-const DEV_MODE = true;
+const DEV_MODE = false;
 let API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
+
+function getAuthHeaders() {
+  const token = localStorage.getItem('smartcert_token');
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  };
+}
 
 let allCerts      = [];
 let filteredCerts = [];
@@ -29,40 +37,53 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 /* ─── AUTH ─── */
 async function requireAuthOrRedirect() {
-  if (DEV_MODE) {
-    currentUser = { email: 'admin@smartcert.tn', role: 'admin' };
-    const nameEl   = document.getElementById('user-name');
-    const roleEl   = document.getElementById('user-role');
-    const avatarEl = document.getElementById('user-avatar');
-    if (nameEl)   nameEl.textContent   = 'Admin';
-    if (roleEl)   roleEl.textContent   = 'Administrateur';
-    if (avatarEl) avatarEl.textContent = 'A';
+  const token = localStorage.getItem('smartcert_token');
+  if (!token) {
+    window.location.href = 'login.html';
     return;
   }
 
   try {
-    const res  = await fetch(`${API_BASE}/certificates`, { credentials: 'include' });
-    const data = await res.json();
-    if (!data.authenticated) {
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!res.ok) {
+      localStorage.removeItem('smartcert_token');
       window.location.href = 'login.html';
-
       return;
     }
-    const user = data.user;
+
+    const data = await res.json();
+    currentUser = data.user;
+    
     const nameEl   = document.getElementById('user-name');
     const roleEl   = document.getElementById('user-role');
     const avatarEl = document.getElementById('user-avatar');
-    if (nameEl)   nameEl.textContent   = user.email ? user.email.split('@')[0] : 'Utilisateur';
-    if (roleEl)   roleEl.textContent   = user.role === 'admin' ? 'Administrateur' : 'Étudiant';
-    if (avatarEl) avatarEl.textContent = user.email ? user.email[0].toUpperCase() : 'U';
-  } catch {
-    window.location.href = '../frontend/login.html';
+    
+    if (nameEl)   nameEl.textContent   = currentUser.name || currentUser.email.split('@')[0];
+    if (roleEl)   roleEl.textContent   = currentUser.role === 'admin' ? 'Administrateur' : 'Étudiant';
+    if (avatarEl) avatarEl.textContent = (currentUser.name || currentUser.email)[0].toUpperCase();
+    
+    if (currentUser.role !== 'admin') {
+       window.location.href = 'dashboard_candidat.html';
+    }
+  } catch (error) {
+    console.error('Auth check failed:', error);
+    window.location.href = 'login.html';
   }
 }
 
 async function logout() {
-  await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
-  window.location.href = '../frontend/login.html';
+  try {
+    await fetch(`${API_BASE}/auth/logout`, { 
+      method: 'POST', 
+      headers: getAuthHeaders() 
+    });
+  } catch (e) {}
+  localStorage.removeItem('smartcert_token');
+  localStorage.removeItem('smartcert_user');
+  window.location.href = 'login.html';
 }
 
 /* ─── NAVIGATION ─── */
@@ -98,7 +119,9 @@ function showPage(page) {
 async function checkChainStatus() {
   const el = document.getElementById('chain-status-text');
   try {
-    const res  = await fetch(`${API_BASE}/chain/status`, { credentials: 'include' });
+    const res  = await fetch(`${API_BASE}/chain/status`, { 
+      headers: getAuthHeaders() 
+    });
     const data = await res.json();
     if (data.connected) {
       el.textContent = `Ethereum Testnet · v${data.web3_version || '—'}`;
@@ -127,7 +150,9 @@ function styleChainError(el) {
 async function loadChainInfo() {
   const el = document.getElementById('chainInfo');
   try {
-    const res = await fetch(`${API_BASE}/chain/status`, { credentials: 'include' });
+    const res = await fetch(`${API_BASE}/chain/status`, { 
+      headers: getAuthHeaders() 
+    });
     const d   = await res.json();
     el.innerHTML = `
       <div class="info-grid">
@@ -152,23 +177,32 @@ async function loadChainInfo() {
 
 /* ─── LOAD CERTIFICATES ─── */
 async function loadCertificates() {
+  const btn = document.querySelector('button[onclick="loadCertificates()"] i');
+  if (btn) btn.classList.add('fa-spin');
+
   try {
-    const res  = await fetch(`${API_BASE}/certificates`, { credentials: 'include' });
-    const data = await res.json();
-    allCerts      = data.certificates || data || [];
+    const res = await fetch(`${API_BASE}/certificates`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed');
+    allCerts = await res.json();
     filteredCerts = [...allCerts];
+    
     updateStats();
     renderRecentTable();
     renderFullTable();
     updateBadge();
-    showToast('Certificats chargés', 'success');
-  } catch {
-    showToast('Impossible de joindre le backend', 'error');
+    
+    showToast('Données actualisées', 'success');
+  } catch (err) {
+    showToast('Erreur de chargement', 'error');
     allCerts      = [];
     filteredCerts = [];
     renderRecentTable();
     renderFullTable();
     updateStats();
+  } finally {
+    if (btn) setTimeout(() => btn.classList.remove('fa-spin'), 600);
   }
 }
 
@@ -253,7 +287,7 @@ function buildRow(c, withCheckbox) {
       <td>
         <div class="actions">
           <button class="btn btn-success btn-sm btn-icon" title="Prévisualiser"
-            onclick='openPreview(${certData})'>
+            onclick="openPreview('${c.id || c.cert_id}')">
             <i class="fas fa-eye"></i>
           </button>
           <button class="btn btn-danger btn-sm btn-icon" title="Supprimer"
@@ -331,43 +365,61 @@ function toggleSelectAll(cb) {
 }
 
 /* ─── PREVIEW MODAL ─── */
-function openPreview(cert) {
-  const c    = cert;
-  const date = c.issue_date ? c.issue_date.split('T')[0] : (c.date || '—');
+function openPreview(id) {
+  const c = allCerts.find(x => (x.id === id || x.cert_id === id));
+  if (!c) {
+    showToast('Erreur: الشهادة غير موجودة', 'error');
+    return;
+  }
+  const dateStr = c.issue_date ? new Date(c.issue_date).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }) : '—';
 
   document.getElementById('certPreviewContent').innerHTML = `
-    <div class="cert-border">
-      <div class="cert-uni">${c.institution || 'Université SmartCert'}</div>
-      <hr style="border-color:#c8d8ea;margin:10px 0">
-      <div style="font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:#4a6a9a;margin-bottom:6px">Certifie que</div>
-      <div class="cert-student">${c.recipient_name || c.name || '—'}</div>
-      <div class="cert-desc">a complété avec succès le programme</div>
-      <div class="cert-program">${c.program || c.programme || '—'}</div>
-      <div class="cert-meta">
-        <div class="cert-meta-item">
-          <div class="cert-meta-label">Date</div>
-          <div class="cert-meta-value">${date}</div>
+    <div class="cert-preview-box" style="background:white; padding:35px 50px; text-align:center; display:flex; flex-direction:column; border: 10px double #c5a059; color:#1a2a40; aspect-ratio: 1.414 / 1; width:100%; max-width:800px; margin:0 auto; font-family:'Jost', sans-serif; position:relative; box-sizing:border-box;">
+        <div style="margin-bottom:5px;">
+           <div style="font-family:'Cormorant Garamond', serif; font-size:16px; font-weight:700; text-transform:uppercase; letter-spacing:2px;">${c.institution || 'Université de Monastir'}</div>
         </div>
-        <div class="cert-meta-item">
-          <div class="cert-meta-label">ID</div>
-          <div class="cert-meta-value" style="font-family:monospace;font-size:10px">${c.id || c.cert_id || '—'}</div>
+        
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:5px;">
+          <div style="font-family:'Cormorant Garamond', serif; font-size:40px; font-weight:700; letter-spacing:3px; margin:0;">CERTIFICAT</div>
+          <div style="font-size:9px; letter-spacing:3px; color:#666; margin-bottom:15px; text-transform:uppercase;">De Réussite — Certificate of Achievement</div>
+          
+          <div style="font-style:italic; font-size:13px; color:#555;">La présente certifie que</div>
+          <div style="font-family:'Cormorant Garamond', serif; font-size:32px; font-weight:700; border-bottom:1px solid #ddd; display:inline-block; padding:0 15px 2px; margin:5px 0;">${c.recipient_name || c.name}</div>
+          
+          <div style="font-size:14px; color:#555;">a complété avec succès le programme</div>
+          <div style="font-family:'Jost', sans-serif; font-size:20px; font-weight:700; color:#0a3a5c;">${c.program || c.programme}</div>
         </div>
-        <div class="cert-meta-item">
-          <div class="cert-meta-label">Statut</div>
-          <div class="cert-meta-value" style="color:#1a7a4a">${c.status || 'Vérifié'}</div>
+
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:20px;">
+          <div style="text-align:left; flex:1;">
+            <div style="font-size:9px; text-transform:uppercase; color:#999; margin-bottom:2px;">Date d'émission</div>
+            <div style="font-weight:700; font-size:13px;">${dateStr}</div>
+          </div>
+          <div style="text-align:center; flex:1;">
+             <div style="font-family:'Cormorant Garamond', serif; font-size:18px; font-weight:700; border-bottom: 1px solid #1a2a40; display:inline-block; padding:0 10px;">${c.director_name || 'Directeur'}</div>
+             <div style="font-size:9px; text-transform:uppercase; color:#999; margin-top:3px;">Directeur des Études</div>
+          </div>
+          <div style="text-align:right; flex:1; display:flex; justify-content:flex-end; align-items:center;">
+             <div style="text-align:center; position:relative; width:100px;">
+                <!-- QR Code (Generated using current cert ID) -->
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${c.id || c.cert_id}" style="width:60px; height:60px; padding:5px; background:white; border:1px solid #c5a059; margin-bottom:5px;">
+                <div style="font-size:7px; text-transform:uppercase; color:#c5a059; font-weight:700; letter-spacing:1px;">Verified on Blockchain</div>
+                <div style="font-size:6px; color:#999; font-family:monospace; margin-top:2px;">TX: ${c.tx_hash ? c.tx_hash.substring(0,10) : '0x...'}...</div>
+                
+                <!-- Circular Badge Ornament -->
+                <div style="position:absolute; top:-10px; right:-10px; width:120px; height:120px; border:1px dashed #c5a059; border-radius:50%; opacity:0.1; pointer-events:none;"></div>
+             </div>
+          </div>
         </div>
-      </div>
     </div>`;
 
   setText('certHashDisplay', c.blockchain_hash || c.tx_hash || 'Hash non disponible');
 
   document.getElementById('certInfoGrid').innerHTML = `
     <div class="info-item"><label>Bénéficiaire</label><p>${c.recipient_name || c.name || '—'}</p></div>
-    <div class="info-item"><label>Email</label><p>${c.email || '—'}</p></div>
     <div class="info-item"><label>Programme</label><p>${c.program || c.programme || '—'}</p></div>
     <div class="info-item"><label>Institution</label><p>${c.institution || '—'}</p></div>
-    <div class="info-item"><label>Date d'émission</label><p>${date}</p></div>
-    <div class="info-item"><label>Statut</label><p>${c.status || '—'}</p></div>`;
+    <div class="info-item"><label>Date d'émission</label><p>${dateStr}</p></div>`;
 
   openModal('previewModal');
 }
@@ -387,7 +439,8 @@ async function confirmDelete() {
 
   try {
     const res = await fetch(`${API_BASE}/certificates/${certToDelete}`, {
-      method: 'DELETE', credentials: 'include'
+      method: 'DELETE', 
+      headers: getAuthHeaders()
     });
     if (res.ok) {
       showToast('Certificat supprimé', 'success');
@@ -425,8 +478,7 @@ async function issueCertificate() {
   try {
     const res = await fetch(`${API_BASE}/certificates`, {
       method:      'POST',
-      headers:     { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      headers:     getAuthHeaders(),
       body:        JSON.stringify({
         recipient_name: name, email,
         program:        prog,
@@ -469,7 +521,9 @@ async function verifyCertificate() {
   result.innerHTML = `<div style="color:var(--muted);font-size:13px"><span class="spinner"></span> Vérification en cours…</div>`;
 
   try {
-    const res  = await fetch(`${API_BASE}/certificates/verify/${encodeURIComponent(id)}`, { credentials: 'include' });
+    const res  = await fetch(`${API_BASE}/certificates/verify/${encodeURIComponent(id)}`, { 
+      headers: getAuthHeaders() 
+    });
     const data = await res.json();
 
     if (data.valid || data.verified) {
@@ -546,7 +600,26 @@ function saveSettings() {
 function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
 function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
 
+/* ─── NOTIFICATIONS ─── */
+function toggleNotifications(e) {
+  e.stopPropagation();
+  const dropdown = document.getElementById('notifDropdown');
+  dropdown.classList.toggle('open');
+}
+
+function clearNotifs() {
+  document.querySelectorAll('.notif-item').forEach(i => i.classList.remove('unread'));
+  document.querySelector('.notif-dot').style.display = 'none';
+  showToast('Notifications marquées comme lues', 'success');
+}
+
+// Fermer au clic ailleurs
 document.addEventListener('click', e => {
+  const dropdown = document.getElementById('notifDropdown');
+  if (dropdown && !dropdown.contains(e.target)) {
+    dropdown.classList.remove('open');
+  }
+  
   ['previewModal', 'deleteModal'].forEach(id => {
     const overlay = document.getElementById(id);
     if (e.target === overlay) closeModal(id);

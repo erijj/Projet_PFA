@@ -84,7 +84,7 @@
     </div>
     <div class="header-right">
       <div class="pill"><div class="dot"></div><span>Ethereum Testnet</span></div>
-      <a href="login.html" class="btn-logout">⎋ Déconnexion</a>
+      <a href="#" onclick="logout(); return false;" class="btn-logout">⎋ Déconnexion</a>
 
     </div>
   </header>
@@ -269,8 +269,19 @@ const POSSIBLE = ['http://127.0.0.1:5000','http://localhost:5000'];
 let API = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
 
 async function findBackend() {
+  const token = localStorage.getItem('smartcert_token');
   for (const u of POSSIBLE) {
-    try { const r = await fetch(u+'/chain/status',{signal:AbortSignal.timeout(2000)}); if(r.ok){API=u;localStorage.setItem('smartcert_api',u);return true;} } catch {}
+    try { 
+      const r = await fetch(u+'/chain/status', {
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal: AbortSignal.timeout(2000)
+      }); 
+      if(r.ok){
+        API=u;
+        localStorage.setItem('smartcert_api',u);
+        return true;
+      } 
+    } catch {}
   }
   return false;
 }
@@ -283,10 +294,27 @@ async function checkBackend() {
 }
 
 window.addEventListener('load', async () => {
-  const s = localStorage.getItem('smartcert_student');
-  if (s) { try { const o=JSON.parse(s); document.getElementById('studentName').textContent=o.name||'Étudiant'; document.getElementById('studentEmail').textContent=o.email||'—'; document.getElementById('studentAvatar').textContent=(o.name||'E')[0].toUpperCase(); } catch {} }
+  const token = localStorage.getItem('smartcert_token');
+  if (!token) {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  const uStr = localStorage.getItem('smartcert_user');
+  if (uStr) { 
+    try { 
+      const o = JSON.parse(uStr); 
+      document.getElementById('studentName').textContent = o.name || 'Étudiant'; 
+      document.getElementById('studentEmail').textContent = o.email || '—'; 
+      document.getElementById('studentAvatar').textContent = (o.name || o.email || 'E')[0].toUpperCase(); 
+    } catch {} 
+  }
+
   const id = new URLSearchParams(window.location.search).get('id');
-  if (id) { document.getElementById('certIdInput').value=id; verifyCert(); }
+  if (id) { 
+    document.getElementById('certIdInput').value = id; 
+    verifyCert(); 
+  }
   await checkBackend();
 });
 
@@ -298,8 +326,12 @@ async function verifyCert() {
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Vérification…';
   area.innerHTML='<div style="color:var(--sky);font-size:13px;padding:10px 0"><span class="spinner"></span> Interrogation de la blockchain…</div>';
   try {
-    const res  = await fetch(`${API}/certificates/verify/${encodeURIComponent(id)}`);
+    const token = localStorage.getItem('smartcert_token');
+    const res  = await fetch(`${API}/certificates/verify/${encodeURIComponent(id)}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     const data = await res.json();
+    if (res.status===401) { window.location.href = 'login.html'; return; }
     if (res.status===404||!data.valid) { area.innerHTML=buildInvalid(data,id); toast('❌ Certificat introuvable','error'); }
     else { area.innerHTML=buildValidResult(data); toast('✅ Certificat authentique !','success'); }
   } catch {
@@ -319,7 +351,7 @@ function buildValidResult(d) {
       </div>
       ${buildCertHTML(d)}
       ${d.blockchain_hash?`<div class="hash-label">⛓ Hash Blockchain (SHA-256)</div><div class="hash-box">${escH(d.blockchain_hash)}</div>`:''}
-      <a class="btn-pdf" href="${API}/certificates/${escH(d.id||d.cert_id||'')}/pdf" target="_blank">⬇ Télécharger le PDF</a>
+      <a class="btn-pdf" href="${API}/certificates/${escH(d.id||d.cert_id||'')}/pdf?token=${localStorage.getItem('smartcert_token')}" target="_blank">⬇ Télécharger le PDF</a>
     </div>`;
 }
 
@@ -328,6 +360,19 @@ function buildInvalid(d,id) {
 }
 
 function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+async function logout() {
+  try {
+    const token = localStorage.getItem('smartcert_token');
+    await fetch(`${API}/auth/logout`, { 
+      method: 'POST', 
+      headers: { 'Authorization': `Bearer ${token}` } 
+    });
+  } catch (e) {}
+  localStorage.removeItem('smartcert_token');
+  localStorage.removeItem('smartcert_user');
+  window.location.href = 'login.html';
+}
 
 function toast(msg,type='success'){const box=document.getElementById('toastBox');const el=document.createElement('div');el.className=`toast ${type}`;el.textContent=msg;box.appendChild(el);setTimeout(()=>{el.style.transition='opacity .4s,transform .4s';el.style.opacity='0';el.style.transform='translateX(110%)';setTimeout(()=>el.remove(),400)},3200)}
 </script>

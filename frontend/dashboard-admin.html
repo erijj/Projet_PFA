@@ -65,10 +65,36 @@
       </div>
 
       <div class="topbar-actions">
-        <button class="topbar-btn" title="Notifications">
+        <button class="topbar-btn" title="Notifications" onclick="toggleNotifications(event)">
           <i class="fas fa-bell"></i>
           <span class="notif-dot"></span>
         </button>
+        
+        <!-- Dropdown Notifications -->
+        <div id="notifDropdown" class="notif-dropdown">
+          <div class="notif-header">
+            <span>Notifications</span>
+            <button onclick="clearNotifs()">Tout marquer comme lu</button>
+          </div>
+          <div class="notif-body" id="notifBody">
+            <!-- Les notifications seront insérées ici -->
+            <div class="notif-item unread">
+              <div class="notif-icon"><i class="fas fa-circle-check"></i></div>
+              <div class="notif-content">
+                <p><strong>Système prêt</strong>: La connexion Blockchain est établie.</p>
+                <span>À l'instant</span>
+              </div>
+            </div>
+            <div class="notif-item">
+              <div class="notif-icon"><i class="fas fa-user-shield"></i></div>
+              <div class="notif-content">
+                <p><strong>Sécurité</strong>: Connexion réussie en tant qu'administrateur.</p>
+                <span>Il y a 5 min</span>
+              </div>
+            </div>
+          </div>
+          <div class="notif-footer">Voir tout l'historique</div>
+        </div>
         <button class="topbar-btn" title="Actualiser" onclick="loadCertificates()">
           <i class="fas fa-rotate"></i>
         </button>
@@ -296,12 +322,12 @@
 
 <!-- ========== MODAL PREVIEW ========== -->
 <div class="modal-overlay" id="previewModal">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title"><i class="fas fa-eye" style="font-size:13px;margin-right:6px"></i> Aperçu du Certificat</div>
-      <button class="modal-close" onclick="closeModal('previewModal')"><i class="fas fa-xmark"></i></button>
+  <div class="sc-modal">
+    <div class="sc-modal-header">
+      <div class="sc-modal-title"><i class="fas fa-eye" style="font-size:13px;margin-right:6px"></i> Aperçu du Certificat</div>
+      <button class="sc-modal-close" onclick="closeModal('previewModal')"><i class="fas fa-xmark"></i></button>
     </div>
-    <div class="modal-body">
+    <div class="sc-modal-body">
       <div class="cert-preview" id="certPreviewContent"></div>
       <div style="margin-top:16px">
         <div class="field-label" style="margin-bottom:6px">Hash Blockchain</div>
@@ -309,7 +335,7 @@
       </div>
       <div class="info-grid" id="certInfoGrid" style="margin-top:16px"></div>
     </div>
-    <div class="modal-footer">
+    <div class="sc-modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('previewModal')">Fermer</button>
       <button class="btn btn-success btn-sm" onclick="downloadPDF()">
         <i class="fas fa-download" style="font-size:11px"></i> Télécharger PDF
@@ -320,19 +346,19 @@
 
 <!-- ========== MODAL DELETE ========== -->
 <div class="modal-overlay" id="deleteModal">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-header">
-      <div class="modal-title" style="color:var(--accent-red)">
+  <div class="sc-modal" style="max-width:420px">
+    <div class="sc-modal-header">
+      <div class="sc-modal-title" style="color:var(--accent-red)">
         <i class="fas fa-triangle-exclamation" style="font-size:13px;margin-right:6px"></i> Supprimer le Certificat
       </div>
-      <button class="modal-close" onclick="closeModal('deleteModal')"><i class="fas fa-xmark"></i></button>
+      <button class="sc-modal-close" onclick="closeModal('deleteModal')"><i class="fas fa-xmark"></i></button>
     </div>
-    <div class="modal-body">
+    <div class="sc-modal-body">
       <p style="font-size:14px;color:var(--text-secondary)">Cette action est irréversible. Le certificat sera retiré de la base de données.</p>
       <p style="font-size:13px;color:var(--text-muted);margin-top:8px">Note : L'enregistrement blockchain reste permanent.</p>
       <div class="delete-id-box" id="deleteCertId">—</div>
     </div>
-    <div class="modal-footer">
+    <div class="sc-modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('deleteModal')">Annuler</button>
       <button class="btn btn-danger" onclick="confirmDelete()" id="confirmDeleteBtn">
         <i class="fas fa-trash" style="font-size:11px"></i> Supprimer
