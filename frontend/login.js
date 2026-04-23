@@ -87,7 +87,7 @@ function doLogin() {
   if (currentRole === 'admin') {
     window.location.href = 'dashboard-admin.html';
   } else {
-    window.location.href = 'dashboard_candidat.html';
+    window.location.href = 'smartcert.html';
   }
 }
 
