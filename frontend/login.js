@@ -71,10 +71,11 @@ function hideAlert(id) {
   document.getElementById(id).classList.remove('show');
 }
 
-function doLogin() {
+async function doLogin() {
   const email = document.getElementById('loginEmail').value.trim();
-  const pass = document.getElementById('loginPass').value;
+  const pass  = document.getElementById('loginPass').value;
   hideAlert('loginAlert');
+
   if (!email || !pass) {
     showAlert('loginAlert', 'Veuillez remplir tous les champs.');
     return;
@@ -83,11 +84,39 @@ function doLogin() {
     showAlert('loginAlert', 'Adresse e-mail invalide.');
     return;
   }
-  // Simulate login — replace with real API call
-  if (currentRole === 'admin') {
-    window.location.href = 'dashboard_admin.html';
-  } else {
-    window.location.href = 'dashboard_candidat.html';
+
+  const btn = document.querySelector('#viewLogin .btn-primary') || document.querySelector('button[onclick="doLogin()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Connexion…'; }
+
+  try {
+    const API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
+    const res  = await fetch(`${API_BASE}/auth/login`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ email, password: pass }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showAlert('loginAlert', data.error || 'Email ou mot de passe incorrect.');
+      return;
+    }
+
+    // Stocker le token JWT et les infos utilisateur
+    localStorage.setItem('smartcert_token', data.token);
+    localStorage.setItem('smartcert_user',  JSON.stringify(data.user));
+
+    // Redirection selon le rôle
+    if (data.user.role === 'admin') {
+      window.location.href = 'dashboard-admin.html';
+    } else {
+      window.location.href = 'dashboard-admin.html'; // TODO: page candidat
+    }
+
+  } catch (err) {
+    showAlert('loginAlert', 'Impossible de joindre le serveur. Vérifiez que le backend est démarré.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Se connecter'; }
   }
 }
 

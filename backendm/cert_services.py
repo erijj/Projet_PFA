@@ -37,9 +37,10 @@ C_BORDER = colors.HexColor('#D4AF37')
 
 def _logo():
     base = os.path.dirname(os.path.abspath(__file__))
-    for p in [os.path.join(base,'..','shared','logo.png'),
-              os.path.join(base,'shared','logo.png'),
-              os.path.join(base,'logo.png')]:
+    for p in [os.path.join(base, '..', 'frontend', 'logo.png'),
+              os.path.join(base, '..', 'shared',   'logo.png'),
+              os.path.join(base, 'shared', 'logo.png'),
+              os.path.join(base, 'logo.png')]:
         if os.path.exists(p): return p
     return None
 
