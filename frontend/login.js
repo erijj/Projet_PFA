@@ -85,7 +85,7 @@ function doLogin() {
   }
   // Simulate login — replace with real API call
   if (currentRole === 'admin') {
-    window.location.href = 'dashboard_admin.html';
+    window.location.href = 'dashboard-admin.html';
   } else {
     window.location.href = 'dashboard_candidat.html';
   }
