@@ -577,7 +577,7 @@
           <div class="card-header">
             <span style="font-size:18px">🔍</span>
             <div>
-              <div class="card-title">Vérifier un Certificat</div>
+              <div class="card-title">consulter votre certificat</div>
               <div class="card-subtitle">Vérification instantanée via la blockchain Ethereum</div>
             </div>
             <a href="chat.html" class="btn-chatbot">
@@ -827,6 +827,7 @@
       localStorage.removeItem('smartcert_user');
       window.location.href = 'login.html';
     }
+
 
     function toast(msg, type = 'success') { const box = document.getElementById('toastBox'); const el = document.createElement('div'); el.className = `toast ${type}`; el.textContent = msg; box.appendChild(el); setTimeout(() => { el.style.transition = 'opacity .4s,transform .4s'; el.style.opacity = '0'; el.style.transform = 'translateX(110%)'; setTimeout(() => el.remove(), 400) }, 3200) }
   </script>

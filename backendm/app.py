@@ -81,7 +81,7 @@ def init_db():
     conn.commit()
         
     conn.close()
-    print("✅ Base de données initialisée")
+    print("[OK] Base de donnees initialisee")
 
 # ─── HELPERS ──────────────────────────────────────────────
 def generate_cert_id():
@@ -204,7 +204,7 @@ def issue_certificate():
     finally:
         conn.close()
 
-    print(f"✅ Certificat créé : {cert_id}")
+    print(f"[OK] Certificat cree : {cert_id}")
 
     cert = {
         'id':              cert_id,
@@ -437,5 +437,5 @@ def send_email_route(cert_id):
 # ═══════════════════════════════════════════════════════════
 if __name__ == '__main__':
     init_db()
-    print("🚀 SmartCert API démarrée → http://127.0.0.1:5000")
+    print("SmartCert API demarree -> http://127.0.0.1:5000")
     app.run(debug=False, host='127.0.0.1', port=5000)

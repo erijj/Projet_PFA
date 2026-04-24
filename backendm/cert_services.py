@@ -155,10 +155,6 @@ def generate_certificate_pdf(cert: dict) -> io.BytesIO:
     c.setFont('Courier', 7)
     c.drawRightString(W - 15*mm, 15*mm, f"NETWORK: GANACHE_LOCAL | ID: {cid}")
 
-    c.showPage()
-    c.save()
-    buf.seek(0)
-    return bufntredString(seax+11*mm, seay-1*mm, '*')
 
     # ── NOTE AUTH ───────────────────────────────────────
     c.setFillColor(colors.HexColor('#6A8FAA'))
