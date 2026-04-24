@@ -129,6 +129,44 @@ def _log_auth(action: str, email: str, role: str, ip: str):
     except sqlite3.Error as e:
         print(f"⚠ Auth log error: {e}")
 
+# ─── REGISTRATION ─────────────────────────────────────────
+@auth_bp.route("/register", methods=["POST"])
+def register():
+    """
+    Corps JSON attendu : { "email", "password", "name", "role", "institution", "student_id" }
+    """
+    data = request.get_json(silent=True) or {}
+    email = data.get("email", "").lower().strip()
+    password = data.get("password", "")
+    name = data.get("name", "").strip()
+    role = data.get("role", "etudiant") # 'admin' or 'etudiant'
+    institution = data.get("institution", "")
+    student_id = data.get("student_id", "")
+
+    if not email or not password or not name:
+        return jsonify({"error": "Champs obligatoires manquants"}), 400
+
+    if get_user_by_email(email):
+        return jsonify({"error": "Cet email est déjà utilisé"}), 409
+
+    pwd_hash = generate_password_hash(password)
+
+    try:
+        conn = sqlite3.connect(DATABASE)
+        conn.execute("""
+            INSERT INTO users (email, password_hash, role, name)
+            VALUES (?, ?, ?, ?)
+        """, (email, pwd_hash, role, name))
+        conn.commit()
+        conn.close()
+        
+        _log_auth("REGISTER", email, role, request.remote_addr or "unknown")
+        
+        return jsonify({"success": True, "message": "Compte créé avec succès"}), 201
+    except sqlite3.Error as e:
+        print(f"Database error in register: {e}")
+        return jsonify({"error": "Erreur lors de la création du compte"}), 500
+
 
 # ═══════════════════════════════════════════════════════════
 #  ROUTES

@@ -243,7 +243,7 @@
       overflow: hidden;
       backdrop-filter: blur(12px);
       box-shadow: 0 20px 60px rgba(0,0,0,.4);
-      animation: fadeUp .4s ease;
+      opacity: 1;
     }
 
     .valid-header {
@@ -428,24 +428,23 @@
   ══════════════════════════════════════════════ -->
   <div class="search-container">
     <div class="search-card">
-      <div class="search-row">
+      <form class="search-row" onsubmit="event.preventDefault(); verifyCert(); return false;">
         <input
           class="cert-input"
           id="certIdInput"
           placeholder="identifiant du Certificat"
-          onkeydown="if(event.key==='Enter')verifyCert()"
         />
-        <button class="btn-verify" id="verifyBtn" onclick="verifyCert()">
+        <button type="submit" class="btn-verify" id="verifyBtn">
           <i class="fas fa-bolt"></i> Vérifier
         </button>
-      </div>
+      </form>
     </div>
   </div>
 
   <!-- ══════════════════════════════════════════════
        RÉSULTAT
   ══════════════════════════════════════════════ -->
-  <div class="result-section" id="resultSection"></div>
+  <div class="result-section" id="finalPublicCertOutput" style="margin-top: 30px;"></div>
 
 
   <!-- ══════════════════════════════════════════════
@@ -476,17 +475,22 @@
     });
 
     /* ─── Vérification ─── */
+    let isVerifying = false;
     async function verifyCert() {
-      const id  = document.getElementById('certIdInput').value.trim();
-      const res = document.getElementById('resultSection');
+      if (isVerifying) return;
+      const idInput = document.getElementById('certIdInput');
+      const id  = idInput.value.trim();
+      const res = document.getElementById('finalPublicCertOutput');
       const btn = document.getElementById('verifyBtn');
       if (!id) return;
 
+      isVerifying = true;
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span>&nbsp;Vérification…';
+      btn.style.opacity = "0.7";
+      btn.innerHTML = 'Vérification...';
       res.innerHTML = `
-        <div style="text-align:center;padding:36px;color:var(--muted);font-size:.85rem">
-          <span class="spinner"></span>&nbsp; Interrogation de la blockchain…
+        <div style="text-align:center;padding:40px;color:var(--muted);font-size:.85rem;background:rgba(0,0,0,0.2);border-radius:16px;">
+          ⌛ Interrogation de la blockchain...
         </div>`;
 
       try {
@@ -502,33 +506,34 @@
           const el  = document.getElementById('shareUrl');
           if (el) el.value = url;
         }
-      } catch {
-        res.innerHTML = `
-          <div class="cert-invalid-card">
-            <div class="invalid-icon"><i class="fas fa-plug"></i></div>
-            <div class="invalid-title">Serveur non disponible</div>
-            <div class="invalid-msg">
-              Le backend Flask n'est pas accessible sur
-              <strong style="color:var(--sky)">${API_BASE}</strong>.<br>
-              Démarrez le serveur puis réessayez.
-            </div>
-          </div>`;
+      } catch (err) {
+        console.error("Verification Error:", err);
+        if (!res.innerHTML.includes('cert-valid-card')) {
+          res.innerHTML = `<div class="cert-invalid-card"><div class="invalid-title">Serveur non disponible</div></div>`;
+        }
+      } finally {
+        isVerifying = false;
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.innerHTML = '<i class="fas fa-bolt"></i> Vérifier';
       }
-
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-bolt"></i> Vérifier';
-      res.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     /* ─── Carte valide ─── */
     function buildValid(d) {
       const date = (d.issue_date || d.date || '—').split('T')[0];
-      const formattedDate = new Date(date).toLocaleDateString('fr-FR', {
-        year: 'numeric', month: 'long', day: 'numeric'
-      });
+      const dateFr = (() => { 
+        try { 
+          if (date === '—') return '—';
+          return new Date(date).toLocaleDateString('fr-FR', {year:'numeric', month:'long', day:'numeric'}); 
+        } catch { return date; }
+      })();
       const name = escHtml(d.recipient_name || d.name || '—');
-      const prog = escHtml(d.program || '—');
-      const id   = escHtml(d.id || d.cert_id || '—');
+      const prog = escHtml(d.program || d.programme || '—');
+      const inst = escHtml(d.institution || 'UNIVERSITÉ DE MONASTIR');
+      const cid  = escHtml(d.id || d.cert_id || '—');
+      const tx   = escHtml(d.tx_hash || '0x4f8948bc43...');
+      const director = escHtml(d.director_name || 'Directeur des Études');
 
       return `
         <div class="cert-valid-card">
@@ -539,58 +544,70 @@
             </div>
             <div>
               <div class="valid-title">Certificat Authentique</div>
-              <div class="valid-subtitle">Vérifié sur la blockchain Ethereum · ID ${id}</div>
+              <div class="valid-subtitle">Vérifié sur la blockchain Ethereum · ID ${cid}</div>
             </div>
             <div class="verified-stamp">
               <i class="fas fa-link" style="font-size:.6rem"></i> VÉRIFIÉ
             </div>
           </div>
 
-          <div class="professional-cert">
-            <div class="cert-border-inner">
-              <div class="cert-seal"><span>🎓</span><span>VÉRIFIÉ</span></div>
-              <div class="cert-logo">
-                <img src="logo.png" alt="SmartCert"
-                     onerror="this.style.display='none';this.parentElement.innerHTML='<span style=color:#0a3a5c;font-family:Georgia;font-weight:700;font-size:18px>SmartCert</span>'">
-              </div>
-              <div class="cert-title">DIPLÔME</div>
-              <div class="cert-subtitle">Certificat d'achèvement</div>
-              <div class="cert-recipient">${name}</div>
-              <div class="cert-description">a complété avec succès le programme</div>
-              <div class="cert-program">${prog}</div>
-              <div class="cert-meta">
-                <div class="cert-meta-item">
-                  <div class="cert-meta-label">Date d'émission</div>
-                  <div class="cert-meta-value">${formattedDate}</div>
-                </div>
-                <div class="cert-meta-item">
-                  <div class="cert-meta-label">Identifiant</div>
-                  <div class="cert-meta-value">${id}</div>
-                </div>
-              </div>
-              <div class="cert-signature">
-                <div class="signature-line">
-                  <div></div>
-                  <div class="signature-name">Dr. Ahmed Benali</div>
-                  <div class="signature-title">Directeur Général</div>
-                </div>
-                <div class="signature-line">
-                  <div></div>
-                  <div class="signature-name">Pr. Sarah Mansouri</div>
-                  <div class="signature-title">Responsable Académique</div>
-                </div>
-              </div>
-              <div class="cert-footer">
-                <div class="cert-verified">
-                  <span class="verified-badge">
-                    <i class="fas fa-check"></i> Vérifié sur Blockchain Ethereum
-                  </span>
-                  <span class="verified-badge">
-                    <i class="fas fa-lock"></i> Infalsifiable · SHA-256
-                  </span>
-                </div>
-              </div>
+          <!-- Professional Certificate Layout -->
+          <div style="background:white; border:8px double #C9A03D; padding:25px 15px; position:relative; font-family:'Cormorant Garamond', serif; width:100%; max-width:600px; margin:20px auto; color:#1A2A4F; text-align:center; min-height:750px; display:flex; flex-direction:column; box-sizing:border-box; box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+            
+            <div style="font-family:'Jost', sans-serif; font-size:11px; letter-spacing:4px; font-weight:500; margin-bottom:10px; color:#0A4174;">
+              ${inst.toUpperCase()}
             </div>
+            
+            <div style="font-size:40px; font-weight:700; letter-spacing:6px; margin-bottom:2px; color:#1A2A4F;">
+              CERTIFICAT
+            </div>
+            
+            <div style="font-family:'Jost', sans-serif; font-size:8px; letter-spacing:3px; color:#6A8FAA; margin-bottom:25px; text-transform:uppercase;">
+              DE RÉUSSITE — CERTIFICATE OF ACHIEVEMENT
+            </div>
+
+            <div style="font-family:'Jost', sans-serif; font-size:11px; color:#4E8EA2; margin-bottom:6px; font-style:italic;">
+              La présente certifie que
+            </div>
+            
+            <div style="font-size:34px; font-weight:700; color:#1A2A4F; margin-bottom:5px; line-height:1.1;">
+              ${name}
+            </div>
+            
+            <div style="width:150px; height:1px; background:linear-gradient(90deg, transparent, #C9A03D, transparent); margin:15px auto;"></div>
+            
+            <div style="font-family:'Jost', sans-serif; font-size:11px; color:#6A8FAA; margin-bottom:6px;">
+              a complété avec succès le programme
+            </div>
+            
+            <div style="font-size:20px; font-weight:700; color:#0A4174; margin-bottom:auto;">
+              ${prog}
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:30px; border-top:1px solid #F0F0F0; padding-top:25px;">
+              
+              <div style="flex:1; display:flex; flex-direction:column; align-items:center;">
+                <img src="ethereum_seal.png" alt="Ethereum Seal" style="width:75px; height:75px; object-fit:contain; margin-bottom:8px;" />
+                <div style="font-family:'Jost', sans-serif; font-size:7px; color:#8AACBE; text-transform:uppercase;">Date d'émission</div>
+                <div style="font-family:'Jost', sans-serif; font-size:11px; font-weight:700; color:#1A2A4F;">${dateFr}</div>
+              </div>
+              
+              <div style="flex:1; display:flex; flex-direction:column; align-items:center; padding-bottom:10px;">
+                <div style="font-size:22px; font-weight:700; color:#1A2A4F; margin-bottom:3px; font-style:italic;">Directeur</div>
+                <div style="width:80px; height:1px; background:#1A2A4F; margin-bottom:5px;"></div>
+                <div style="font-family:'Jost', sans-serif; font-size:10px; color:#8AACBE; font-weight:700; text-transform:uppercase;">${director.toUpperCase()}</div>
+              </div>
+              
+              <div style="flex:1; display:flex; flex-direction:column; align-items:center;">
+                <div style="padding:8px; background:#F9F9F9; border-radius:6px; border:1px solid #EEE;">
+                  <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${location.origin}${location.pathname}?id=${cid}" alt="QR Code" style="width:45px; height:45px; display:block;" />
+                </div>
+                <div style="font-family:'Jost', sans-serif; font-size:6px; color:#C9A03D; font-weight:700; text-transform:uppercase; margin-top:6px;">Verified on Blockchain</div>
+                <div style="font-family:'Space Mono', monospace; font-size:6px; color:#8AACBE;">TX: ${tx.substring(0,12)}...</div>
+              </div>
+              
+            </div>
+
           </div>
 
           ${d.blockchain_hash ? `
@@ -605,7 +622,7 @@
             <button class="btn-share" onclick="copyShareLink()">
               <i class="fas fa-link"></i> Copier le lien
             </button>
-            <button class="btn-dl" onclick="window.open('${API_BASE}/certificates/${id}/pdf','_blank')">
+            <button class="btn-dl" onclick="window.open('${API_BASE}/certificates/${cid}/pdf','_blank')">
               <i class="fas fa-download"></i> Télécharger PDF
             </button>
           </div>

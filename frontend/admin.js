@@ -2,8 +2,16 @@
    SmartCert — script.js
    ============================================================ */
 
-const DEV_MODE = true;
+const DEV_MODE = false;
 let API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
+
+function getAuthHeaders() {
+  const token = localStorage.getItem('smartcert_token');
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  };
+}
 
 let allCerts      = [];
 let filteredCerts = [];
@@ -29,40 +37,53 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 /* ─── AUTH ─── */
 async function requireAuthOrRedirect() {
-  if (DEV_MODE) {
-    currentUser = { email: 'admin@smartcert.tn', role: 'admin' };
-    const nameEl   = document.getElementById('user-name');
-    const roleEl   = document.getElementById('user-role');
-    const avatarEl = document.getElementById('user-avatar');
-    if (nameEl)   nameEl.textContent   = 'Admin';
-    if (roleEl)   roleEl.textContent   = 'Administrateur';
-    if (avatarEl) avatarEl.textContent = 'A';
+  const token = localStorage.getItem('smartcert_token');
+  if (!token) {
+    window.location.href = 'login.html';
     return;
   }
 
   try {
-    const res  = await fetch(`${API_BASE}/certificates`, { credentials: 'include' });
-    const data = await res.json();
-    if (!data.authenticated) {
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      headers: getAuthHeaders()
+    });
+    
+    if (!res.ok) {
+      localStorage.removeItem('smartcert_token');
       window.location.href = 'login.html';
-
       return;
     }
-    const user = data.user;
+
+    const data = await res.json();
+    currentUser = data.user;
+    
     const nameEl   = document.getElementById('user-name');
     const roleEl   = document.getElementById('user-role');
     const avatarEl = document.getElementById('user-avatar');
-    if (nameEl)   nameEl.textContent   = user.email ? user.email.split('@')[0] : 'Utilisateur';
-    if (roleEl)   roleEl.textContent   = user.role === 'admin' ? 'Administrateur' : 'Étudiant';
-    if (avatarEl) avatarEl.textContent = user.email ? user.email[0].toUpperCase() : 'U';
-  } catch {
-    window.location.href = '../frontend/login.html';
+    
+    if (nameEl)   nameEl.textContent   = currentUser.name || currentUser.email.split('@')[0];
+    if (roleEl)   roleEl.textContent   = currentUser.role === 'admin' ? 'Administrateur' : 'Étudiant';
+    if (avatarEl) avatarEl.textContent = (currentUser.name || currentUser.email)[0].toUpperCase();
+    
+    if (currentUser.role !== 'admin') {
+       window.location.href = 'dashboard_candidat.html';
+    }
+  } catch (error) {
+    console.error('Auth check failed:', error);
+    window.location.href = 'login.html';
   }
 }
 
 async function logout() {
-  await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
-  window.location.href = '../frontend/login.html';
+  try {
+    await fetch(`${API_BASE}/auth/logout`, { 
+      method: 'POST', 
+      headers: getAuthHeaders() 
+    });
+  } catch (e) {}
+  localStorage.removeItem('smartcert_token');
+  localStorage.removeItem('smartcert_user');
+  window.location.href = 'login.html';
 }
 
 /* ─── NAVIGATION ─── */
@@ -98,7 +119,9 @@ function showPage(page) {
 async function checkChainStatus() {
   const el = document.getElementById('chain-status-text');
   try {
-    const res  = await fetch(`${API_BASE}/chain/status`, { credentials: 'include' });
+    const res  = await fetch(`${API_BASE}/chain/status`, { 
+      headers: getAuthHeaders() 
+    });
     const data = await res.json();
     if (data.connected) {
       el.textContent = `Ethereum Testnet · v${data.web3_version || '—'}`;
@@ -127,7 +150,9 @@ function styleChainError(el) {
 async function loadChainInfo() {
   const el = document.getElementById('chainInfo');
   try {
-    const res = await fetch(`${API_BASE}/chain/status`, { credentials: 'include' });
+    const res = await fetch(`${API_BASE}/chain/status`, { 
+      headers: getAuthHeaders() 
+    });
     const d   = await res.json();
     el.innerHTML = `
       <div class="info-grid">
@@ -152,23 +177,32 @@ async function loadChainInfo() {
 
 /* ─── LOAD CERTIFICATES ─── */
 async function loadCertificates() {
+  const btn = document.querySelector('button[onclick="loadCertificates()"] i');
+  if (btn) btn.classList.add('fa-spin');
+
   try {
-    const res  = await fetch(`${API_BASE}/certificates`, { credentials: 'include' });
-    const data = await res.json();
-    allCerts      = data.certificates || data || [];
+    const res = await fetch(`${API_BASE}/certificates`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error('Failed');
+    allCerts = await res.json();
     filteredCerts = [...allCerts];
+    
     updateStats();
     renderRecentTable();
     renderFullTable();
     updateBadge();
-    showToast('Certificats chargés', 'success');
-  } catch {
-    showToast('Impossible de joindre le backend', 'error');
+    
+    showToast('Données actualisées', 'success');
+  } catch (err) {
+    showToast('Erreur de chargement', 'error');
     allCerts      = [];
     filteredCerts = [];
     renderRecentTable();
     renderFullTable();
     updateStats();
+  } finally {
+    if (btn) setTimeout(() => btn.classList.remove('fa-spin'), 600);
   }
 }
 
@@ -231,12 +265,10 @@ function emptyRow(cols, title, desc) {
 }
 
 function buildRow(c, withCheckbox) {
-  const badge = statusBadge(c.status);
   const date  = c.issue_date ? c.issue_date.split('T')[0] : (c.date || '—');
   const chk   = withCheckbox
     ? `<td><input type="checkbox" class="row-chk" data-id="${c.id}"></td>`
     : '';
-  const certData = JSON.stringify(c).replace(/'/g, '&#39;');
   return `
     <tr>
       ${chk}
@@ -248,12 +280,11 @@ function buildRow(c, withCheckbox) {
         </div>
       </td>
       <td>${c.program || c.programme || '—'}</td>
-      <td>${badge}</td>
       <td>${date}</td>
-      <td>
-        <div class="actions">
+      <td style="text-align:right">
+        <div class="actions" style="justify-content:flex-end">
           <button class="btn btn-success btn-sm btn-icon" title="Prévisualiser"
-            onclick='openPreview(${certData})'>
+            onclick="openPreview('${c.id || c.cert_id}')">
             <i class="fas fa-eye"></i>
           </button>
           <button class="btn btn-danger btn-sm btn-icon" title="Supprimer"
@@ -331,31 +362,58 @@ function toggleSelectAll(cb) {
 }
 
 /* ─── PREVIEW MODAL ─── */
-function openPreview(cert) {
-  const c    = cert;
-  const date = c.issue_date ? c.issue_date.split('T')[0] : (c.date || '—');
+function openPreview(id) {
+  const c = allCerts.find(x => (x.id === id || x.cert_id === id));
+  if (!c) {
+    showToast('Erreur: الشهادة غير موجودة', 'error');
+    return;
+  }
+  const dateStr = c.issue_date ? new Date(c.issue_date).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }) : '—';
 
   document.getElementById('certPreviewContent').innerHTML = `
-    <div class="cert-border">
-      <div class="cert-uni">${c.institution || 'Université SmartCert'}</div>
-      <hr style="border-color:#c8d8ea;margin:10px 0">
-      <div style="font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:#4a6a9a;margin-bottom:6px">Certifie que</div>
-      <div class="cert-student">${c.recipient_name || c.name || '—'}</div>
-      <div class="cert-desc">a complété avec succès le programme</div>
-      <div class="cert-program">${c.program || c.programme || '—'}</div>
-      <div class="cert-meta">
-        <div class="cert-meta-item">
-          <div class="cert-meta-label">Date</div>
-          <div class="cert-meta-value">${date}</div>
+    <div style="background:white; border:8px double #C9A03D; padding:25px 15px; position:relative; box-shadow:0 15px 45px rgba(0,0,0,0.1); font-family:'Cormorant Garamond', serif; width:100%; max-width:550px; margin:0 auto; color:#1A2A4F; text-align:center; min-height:700px; display:flex; flex-direction:column; box-sizing:border-box;">
+      
+      <div style="font-family:'Jost', sans-serif; font-size:10px; letter-spacing:4px; font-weight:500; margin-bottom:10px; color:#0A4174;">
+        ${(c.institution || 'UNIVERSITÉ DE MONASTIR').toUpperCase()}
+      </div>
+      
+      <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:5px;">
+        <div style="font-size:38px; font-weight:700; letter-spacing:5px; margin:0; color:#1A2A4F;">CERTIFICAT</div>
+        <div style="font-family:'Jost', sans-serif; font-size:7px; letter-spacing:3px; color:#6A8FAA; margin-bottom:15px; text-transform:uppercase;">DE RÉUSSITE — CERTIFICATE OF ACHIEVEMENT</div>
+        
+        <div style="font-family:'Jost', sans-serif; font-size:11px; color:#4E8EA2; font-style:italic;">La présente certifie que</div>
+        <div style="font-size:30px; font-weight:700; color:#1A2A4F; margin:5px 0; line-height:1.2;">${c.recipient_name || c.name}</div>
+        <div style="width:140px; height:1px; background:linear-gradient(90deg, transparent, #C9A03D, transparent); margin:12px auto;"></div>
+        
+        <div style="font-family:'Jost', sans-serif; font-size:11px; color:#6A8FAA;">a complété avec succès le programme</div>
+        <div style="font-size:20px; font-weight:700; color:#0A4174; margin-top:5px; padding:0 15px;">${c.program || c.programme}</div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:30px; border-top:1px solid #F0F0F0; padding-top:20px;">
+        
+        <!-- Left: Ethereum Seal -->
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center;">
+          <img src="ethereum_seal.png" alt="Ethereum Seal" style="width:75px; height:75px; object-fit:contain; margin-bottom:8px;" />
+          <div style="font-family:'Jost', sans-serif; font-size:7px; color:#8AACBE; text-transform:uppercase;">Date d'émission</div>
+          <div style="font-family:'Jost', sans-serif; font-size:12px; font-weight:700; color:#1A2A4F;">${dateStr}</div>
         </div>
-        <div class="cert-meta-item">
-          <div class="cert-meta-label">ID</div>
-          <div class="cert-meta-value" style="font-family:monospace;font-size:10px">${c.id || c.cert_id || '—'}</div>
+        
+        <!-- Middle: Director -->
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; padding-bottom:10px;">
+           <div style="font-size:22px; font-weight:700; color:#1A2A4F; margin-bottom:3px; font-style:italic;">Directeur</div>
+           <div style="width:90px; height:1px; background:#1A2A4F; margin-bottom:5px;"></div>
+           <div style="font-family:'Jost', sans-serif; font-size:10px; color:#8AACBE; font-weight:700; text-transform:uppercase;">${(c.director_name || 'Directeur').toUpperCase()}</div>
         </div>
-        <div class="cert-meta-item">
-          <div class="cert-meta-label">Statut</div>
-          <div class="cert-meta-value" style="color:#1a7a4a">${c.status || 'Vérifié'}</div>
+        
+        <!-- Right: QR Code -->
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center;">
+           <div style="padding:8px; background:#F9F9F9; border-radius:6px; border:1px solid #EEE;">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://smartcert.app/verify/${c.id || c.cert_id}" alt="QR Code" style="width:45px; height:45px; display:block;">
+           </div>
+           <div style="font-family:'Jost', sans-serif; font-size:6px; color:#C9A03D; font-weight:700; text-transform:uppercase; margin-top:8px;">Verified on Blockchain</div>
+           <div style="font-family:'Space Mono', monospace; font-size:6px; color:#8AACBE;">TX: ${c.tx_hash ? c.tx_hash.substring(0,12) : '0x...'}...</div>
         </div>
+        
       </div>
     </div>`;
 
@@ -363,11 +421,9 @@ function openPreview(cert) {
 
   document.getElementById('certInfoGrid').innerHTML = `
     <div class="info-item"><label>Bénéficiaire</label><p>${c.recipient_name || c.name || '—'}</p></div>
-    <div class="info-item"><label>Email</label><p>${c.email || '—'}</p></div>
     <div class="info-item"><label>Programme</label><p>${c.program || c.programme || '—'}</p></div>
     <div class="info-item"><label>Institution</label><p>${c.institution || '—'}</p></div>
-    <div class="info-item"><label>Date d'émission</label><p>${date}</p></div>
-    <div class="info-item"><label>Statut</label><p>${c.status || '—'}</p></div>`;
+    <div class="info-item"><label>Date d'émission</label><p>${dateStr}</p></div>`;
 
   openModal('previewModal');
 }
@@ -387,7 +443,8 @@ async function confirmDelete() {
 
   try {
     const res = await fetch(`${API_BASE}/certificates/${certToDelete}`, {
-      method: 'DELETE', credentials: 'include'
+      method: 'DELETE', 
+      headers: getAuthHeaders()
     });
     if (res.ok) {
       showToast('Certificat supprimé', 'success');
@@ -425,8 +482,7 @@ async function issueCertificate() {
   try {
     const res = await fetch(`${API_BASE}/certificates`, {
       method:      'POST',
-      headers:     { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      headers:     getAuthHeaders(),
       body:        JSON.stringify({
         recipient_name: name, email,
         program:        prog,
@@ -469,7 +525,9 @@ async function verifyCertificate() {
   result.innerHTML = `<div style="color:var(--muted);font-size:13px"><span class="spinner"></span> Vérification en cours…</div>`;
 
   try {
-    const res  = await fetch(`${API_BASE}/certificates/verify/${encodeURIComponent(id)}`, { credentials: 'include' });
+    const res  = await fetch(`${API_BASE}/certificates/verify/${encodeURIComponent(id)}`, { 
+      headers: getAuthHeaders() 
+    });
     const data = await res.json();
 
     if (data.valid || data.verified) {
@@ -546,7 +604,26 @@ function saveSettings() {
 function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
 function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
 
+/* ─── NOTIFICATIONS ─── */
+function toggleNotifications(e) {
+  e.stopPropagation();
+  const dropdown = document.getElementById('notifDropdown');
+  dropdown.classList.toggle('open');
+}
+
+function clearNotifs() {
+  document.querySelectorAll('.notif-item').forEach(i => i.classList.remove('unread'));
+  document.querySelector('.notif-dot').style.display = 'none';
+  showToast('Notifications marquées comme lues', 'success');
+}
+
+// Fermer au clic ailleurs
 document.addEventListener('click', e => {
+  const dropdown = document.getElementById('notifDropdown');
+  if (dropdown && !dropdown.contains(e.target)) {
+    dropdown.classList.remove('open');
+  }
+  
   ['previewModal', 'deleteModal'].forEach(id => {
     const overlay = document.getElementById(id);
     if (e.target === overlay) closeModal(id);
