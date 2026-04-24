@@ -563,14 +563,23 @@ body::before {
 .btn-success:hover { background: rgba(34,212,160,0.2); }
 
 .btn-sm   { padding: 6px 13px; font-size: 0.75rem; }
-.btn-icon { padding: 7px; gap: 0; }
+.btn-icon { 
+  width: 32px; 
+  height: 32px; 
+  padding: 0; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  border-radius: 10px;
+  flex-shrink: 0;
+}
 
 /* ===== TABLE CARD ===== */
 .table-card {
   background: linear-gradient(160deg, rgba(10,58,92,0.45), rgba(0,24,40,0.68));
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow-x: auto;
   backdrop-filter: blur(12px);
   box-shadow: var(--shadow);
 }

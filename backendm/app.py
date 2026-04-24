@@ -258,7 +258,7 @@ def verify_certificate(cert_id):
 
     cert     = row_to_dict(row)
     is_valid = cert['status'] == 'Vérifié'
-    log_action('VERIFY', cert['id'])
+    # log_action('VERIFY', cert['id'])  # Removed to prevent Live Server auto-reload loop during verification
 
     return jsonify({
         'valid':    is_valid,

@@ -265,12 +265,10 @@ function emptyRow(cols, title, desc) {
 }
 
 function buildRow(c, withCheckbox) {
-  const badge = statusBadge(c.status);
   const date  = c.issue_date ? c.issue_date.split('T')[0] : (c.date || '—');
   const chk   = withCheckbox
     ? `<td><input type="checkbox" class="row-chk" data-id="${c.id}"></td>`
     : '';
-  const certData = JSON.stringify(c).replace(/'/g, '&#39;');
   return `
     <tr>
       ${chk}
@@ -282,10 +280,9 @@ function buildRow(c, withCheckbox) {
         </div>
       </td>
       <td>${c.program || c.programme || '—'}</td>
-      <td>${badge}</td>
       <td>${date}</td>
-      <td>
-        <div class="actions">
+      <td style="text-align:right">
+        <div class="actions" style="justify-content:flex-end">
           <button class="btn btn-success btn-sm btn-icon" title="Prévisualiser"
             onclick="openPreview('${c.id || c.cert_id}')">
             <i class="fas fa-eye"></i>
@@ -374,43 +371,50 @@ function openPreview(id) {
   const dateStr = c.issue_date ? new Date(c.issue_date).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }) : '—';
 
   document.getElementById('certPreviewContent').innerHTML = `
-    <div class="cert-preview-box" style="background:white; padding:35px 50px; text-align:center; display:flex; flex-direction:column; border: 10px double #c5a059; color:#1a2a40; aspect-ratio: 1.414 / 1; width:100%; max-width:800px; margin:0 auto; font-family:'Jost', sans-serif; position:relative; box-sizing:border-box;">
-        <div style="margin-bottom:5px;">
-           <div style="font-family:'Cormorant Garamond', serif; font-size:16px; font-weight:700; text-transform:uppercase; letter-spacing:2px;">${c.institution || 'Université de Monastir'}</div>
+    <div style="background:white; border:8px double #C9A03D; padding:25px 15px; position:relative; box-shadow:0 15px 45px rgba(0,0,0,0.1); font-family:'Cormorant Garamond', serif; width:100%; max-width:550px; margin:0 auto; color:#1A2A4F; text-align:center; min-height:700px; display:flex; flex-direction:column; box-sizing:border-box;">
+      
+      <div style="font-family:'Jost', sans-serif; font-size:10px; letter-spacing:4px; font-weight:500; margin-bottom:10px; color:#0A4174;">
+        ${(c.institution || 'UNIVERSITÉ DE MONASTIR').toUpperCase()}
+      </div>
+      
+      <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:5px;">
+        <div style="font-size:38px; font-weight:700; letter-spacing:5px; margin:0; color:#1A2A4F;">CERTIFICAT</div>
+        <div style="font-family:'Jost', sans-serif; font-size:7px; letter-spacing:3px; color:#6A8FAA; margin-bottom:15px; text-transform:uppercase;">DE RÉUSSITE — CERTIFICATE OF ACHIEVEMENT</div>
+        
+        <div style="font-family:'Jost', sans-serif; font-size:11px; color:#4E8EA2; font-style:italic;">La présente certifie que</div>
+        <div style="font-size:30px; font-weight:700; color:#1A2A4F; margin:5px 0; line-height:1.2;">${c.recipient_name || c.name}</div>
+        <div style="width:140px; height:1px; background:linear-gradient(90deg, transparent, #C9A03D, transparent); margin:12px auto;"></div>
+        
+        <div style="font-family:'Jost', sans-serif; font-size:11px; color:#6A8FAA;">a complété avec succès le programme</div>
+        <div style="font-size:20px; font-weight:700; color:#0A4174; margin-top:5px; padding:0 15px;">${c.program || c.programme}</div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:30px; border-top:1px solid #F0F0F0; padding-top:20px;">
+        
+        <!-- Left: Ethereum Seal -->
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center;">
+          <img src="ethereum_seal.png" alt="Ethereum Seal" style="width:75px; height:75px; object-fit:contain; margin-bottom:8px;" />
+          <div style="font-family:'Jost', sans-serif; font-size:7px; color:#8AACBE; text-transform:uppercase;">Date d'émission</div>
+          <div style="font-family:'Jost', sans-serif; font-size:12px; font-weight:700; color:#1A2A4F;">${dateStr}</div>
         </div>
         
-        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:5px;">
-          <div style="font-family:'Cormorant Garamond', serif; font-size:40px; font-weight:700; letter-spacing:3px; margin:0;">CERTIFICAT</div>
-          <div style="font-size:9px; letter-spacing:3px; color:#666; margin-bottom:15px; text-transform:uppercase;">De Réussite — Certificate of Achievement</div>
-          
-          <div style="font-style:italic; font-size:13px; color:#555;">La présente certifie que</div>
-          <div style="font-family:'Cormorant Garamond', serif; font-size:32px; font-weight:700; border-bottom:1px solid #ddd; display:inline-block; padding:0 15px 2px; margin:5px 0;">${c.recipient_name || c.name}</div>
-          
-          <div style="font-size:14px; color:#555;">a complété avec succès le programme</div>
-          <div style="font-family:'Jost', sans-serif; font-size:20px; font-weight:700; color:#0a3a5c;">${c.program || c.programme}</div>
+        <!-- Middle: Director -->
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; padding-bottom:10px;">
+           <div style="font-size:22px; font-weight:700; color:#1A2A4F; margin-bottom:3px; font-style:italic;">Directeur</div>
+           <div style="width:90px; height:1px; background:#1A2A4F; margin-bottom:5px;"></div>
+           <div style="font-family:'Jost', sans-serif; font-size:10px; color:#8AACBE; font-weight:700; text-transform:uppercase;">${(c.director_name || 'Directeur').toUpperCase()}</div>
         </div>
-
-        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:20px;">
-          <div style="text-align:left; flex:1;">
-            <div style="font-size:9px; text-transform:uppercase; color:#999; margin-bottom:2px;">Date d'émission</div>
-            <div style="font-weight:700; font-size:13px;">${dateStr}</div>
-          </div>
-          <div style="text-align:center; flex:1;">
-             <div style="font-family:'Cormorant Garamond', serif; font-size:18px; font-weight:700; border-bottom: 1px solid #1a2a40; display:inline-block; padding:0 10px;">${c.director_name || 'Directeur'}</div>
-             <div style="font-size:9px; text-transform:uppercase; color:#999; margin-top:3px;">Directeur des Études</div>
-          </div>
-          <div style="text-align:right; flex:1; display:flex; justify-content:flex-end; align-items:center;">
-             <div style="text-align:center; position:relative; width:100px;">
-                <!-- QR Code (Generated using current cert ID) -->
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${c.id || c.cert_id}" style="width:60px; height:60px; padding:5px; background:white; border:1px solid #c5a059; margin-bottom:5px;">
-                <div style="font-size:7px; text-transform:uppercase; color:#c5a059; font-weight:700; letter-spacing:1px;">Verified on Blockchain</div>
-                <div style="font-size:6px; color:#999; font-family:monospace; margin-top:2px;">TX: ${c.tx_hash ? c.tx_hash.substring(0,10) : '0x...'}...</div>
-                
-                <!-- Circular Badge Ornament -->
-                <div style="position:absolute; top:-10px; right:-10px; width:120px; height:120px; border:1px dashed #c5a059; border-radius:50%; opacity:0.1; pointer-events:none;"></div>
-             </div>
-          </div>
+        
+        <!-- Right: QR Code -->
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center;">
+           <div style="padding:8px; background:#F9F9F9; border-radius:6px; border:1px solid #EEE;">
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://smartcert.app/verify/${c.id || c.cert_id}" alt="QR Code" style="width:45px; height:45px; display:block;">
+           </div>
+           <div style="font-family:'Jost', sans-serif; font-size:6px; color:#C9A03D; font-weight:700; text-transform:uppercase; margin-top:8px;">Verified on Blockchain</div>
+           <div style="font-family:'Space Mono', monospace; font-size:6px; color:#8AACBE;">TX: ${c.tx_hash ? c.tx_hash.substring(0,12) : '0x...'}...</div>
         </div>
+        
+      </div>
     </div>`;
 
   setText('certHashDisplay', c.blockchain_hash || c.tx_hash || 'Hash non disponible');

@@ -24,7 +24,7 @@
     .preview-header { color: var(--muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
     
     /* Small Cert Style for Preview */
-    .cert-preview-box { background: white; width: 100%; aspect-ratio: 1/1.414; border-radius: 4px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); overflow: hidden; position: relative; color: #1a2a40; }
+    .cert-preview-box { background: white; width: 100%; min-height: 700px; border-radius: 4px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; color: #1a2a40; }
     
     .status-bar { background: rgba(34,212,160,0.1); border: 1px solid rgba(34,212,160,0.2); padding: 8px 15px; border-radius: 12px; color: var(--accent-green); font-size: 0.75rem; font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
     .pulse { width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; animation: pulse 2s infinite; }
@@ -163,42 +163,49 @@
   function buildCertHTML(d) {
     const dateStr = d.issue_date ? new Date(d.issue_date).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }) : '—';
     return `
-      <div class="cert-preview-box" style="background:white; padding:35px 50px; text-align:center; display:flex; flex-direction:column; border: 10px double #c5a059; color:#1a2a40; aspect-ratio: 1.414 / 1; width:100%; max-width:800px; margin:0 auto; font-family:'Jost', sans-serif; position:relative; box-sizing:border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
-        <div style="margin-bottom:5px;">
-           <div style="font-family:'Cormorant Garamond', serif; font-size:16px; font-weight:700; text-transform:uppercase; letter-spacing:2px;">${d.institution}</div>
+      <div class="cert-preview-box" style="background:white; padding:25px 20px; text-align:center; display:flex; flex-direction:column; border: 8px double #C9A03D; color:#1A2A4F; width:100%; max-width:550px; margin:0 auto; font-family:'Cormorant Garamond', serif; position:relative; box-sizing:border-box; box-shadow: 0 10px 30px rgba(0,0,0,0.1); min-height:720px;">
+        
+        <div style="font-family:'Jost', sans-serif; font-size:10px; letter-spacing:4px; font-weight:500; margin-bottom:10px; color:#0A4174;">
+          ${(d.institution || 'UNIVERSITÉ DE MONASTIR').toUpperCase()}
         </div>
         
         <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:5px;">
-          <div style="font-family:'Cormorant Garamond', serif; font-size:40px; font-weight:700; letter-spacing:3px; margin:0;">CERTIFICAT</div>
-          <div style="font-size:9px; letter-spacing:3px; color:#666; margin-bottom:15px; text-transform:uppercase;">De Réussite — Certificate of Achievement</div>
+          <div style="font-size:36px; font-weight:700; letter-spacing:5px; margin:0; color:#1A2A4F;">CERTIFICAT</div>
+          <div style="font-family:'Jost', sans-serif; font-size:7px; letter-spacing:3px; color:#6A8FAA; margin-bottom:15px; text-transform:uppercase;">DE RÉUSSITE — CERTIFICATE OF ACHIEVEMENT</div>
           
-          <div style="font-style:italic; font-size:13px; color:#555;">La présente certifie que</div>
-          <div style="font-family:'Cormorant Garamond', serif; font-size:32px; font-weight:700; border-bottom:1px solid #ddd; display:inline-block; padding:0 15px 2px; margin:5px 0;">${d.recipient_name}</div>
+          <div style="font-family:'Jost', sans-serif; font-size:11px; color:#4E8EA2; font-style:italic;">La présente certifie que</div>
+          <div style="font-size:28px; font-weight:700; color:#1A2A4F; margin:5px 0;">${d.recipient_name}</div>
+          <div style="width:120px; height:1px; background:linear-gradient(90deg, transparent, #C9A03D, transparent); margin:10px auto;"></div>
           
-          <div style="font-size:14px; color:#555;">a complété avec succès le programme</div>
-          <div style="font-family:'Jost', sans-serif; font-size:20px; font-weight:700; color:#0a3a5c;">${d.program}</div>
+          <div style="font-family:'Jost', sans-serif; font-size:11px; color:#6A8FAA;">a complété avec succès le programme</div>
+          <div style="font-size:18px; font-weight:700; color:#0A4174; margin-top:5px; padding:0 10px;">${d.program}</div>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:20px;">
-          <div style="text-align:left; flex:1;">
-            <div style="font-size:9px; text-transform:uppercase; color:#999; margin-bottom:2px;">Date d'émission</div>
-            <div style="font-weight:700; font-size:13px;">${dateStr}</div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:30px; border-top:1px solid #F0F0F0; padding-top:20px;">
+          
+          <!-- Left: Ethereum Seal -->
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center;">
+            <img src="ethereum_seal.png" alt="Ethereum Seal" style="width:70px; height:70px; object-fit:contain; margin-bottom:5px;" />
+            <div style="font-family:'Jost', sans-serif; font-size:7px; color:#8AACBE; text-transform:uppercase;">Date d'émission</div>
+            <div style="font-family:'Jost', sans-serif; font-size:11px; font-weight:700;">${dateStr}</div>
           </div>
-          <div style="text-align:center; flex:1;">
-             <div style="font-family:'Cormorant Garamond', serif; font-size:18px; font-weight:700; border-bottom: 1px solid #1a2a40; color:#1a2a40; display:inline-block; padding:0 10px;">${d.director_name || 'Directeur'}</div>
-             <div style="font-size:9px; text-transform:uppercase; color:#999; margin-top:3px;">Directeur des Études</div>
+          
+          <!-- Middle: Director -->
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; padding-bottom:5px;">
+             <div style="font-size:22px; font-weight:700; color:#1A2A4F; margin-bottom:2px; font-style:italic;">Directeur</div>
+             <div style="width:80px; height:1px; background:#1A2A4F; margin-bottom:5px;"></div>
+             <div style="font-family:'Jost', sans-serif; font-size:10px; color:#8AACBE; font-weight:700; text-transform:uppercase;">${(d.director_name || 'Nom du Directeur').toUpperCase()}</div>
           </div>
-          <div style="text-align:right; flex:1; display:flex; justify-content:flex-end; align-items:center;">
-             <div style="text-align:center; position:relative; width:100px;">
-                <!-- QR Code (Generated using current data) -->
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=PREVIEW_MODE" style="width:60px; height:60px; padding:5px; background:white; border:1px solid #c5a059; margin-bottom:5px;">
-                <div style="font-size:7px; text-transform:uppercase; color:#c5a059; font-weight:700; letter-spacing:1px;">Verified on Blockchain</div>
-                <div style="font-size:6px; color:#999; font-family:monospace; margin-top:2px;">TX: 0xGEN_IN_PROGRESS...</div>
-                
-                <!-- Circular Badge Ornament -->
-                <div style="position:absolute; top:-10px; right:-10px; width:120px; height:120px; border:1px dashed #c5a059; border-radius:50%; opacity:0.1; pointer-events:none;"></div>
+          
+          <!-- Right: QR Code -->
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center;">
+             <div style="padding:5px; background:#F9F9F9; border-radius:5px; border:1px solid #EEE;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=PREVIEW" style="width:40px; height:40px; display:block;">
              </div>
+             <div style="font-family:'Jost', sans-serif; font-size:6px; color:#C9A03D; font-weight:700; text-transform:uppercase; margin-top:5px;">Verified on Blockchain</div>
+             <div style="font-family:'Space Mono', monospace; font-size:6px; color:#8AACBE;">TX: 0xGEN_IN...</div>
           </div>
+          
         </div>
       </div>
     `;

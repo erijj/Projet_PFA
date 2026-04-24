@@ -272,10 +272,10 @@
         <div class="table-card">
           <div class="modal-body">
             <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">ID ou Hash du certificat</label>
-            <div style="display:flex;gap:10px">
+            <form style="display:flex;gap:10px" onsubmit="event.preventDefault(); verifyCertificate();">
               <input type="text" id="v-id" placeholder="ex: CERT-2024-001 ou 0x…" style="flex:1;background:rgba(59,130,246,.06);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text-primary);font-family:'Space Mono',monospace;font-size:13px;outline:none">
-              <button class="btn btn-primary" onclick="verifyCertificate()">Vérifier</button>
-            </div>
+              <button type="submit" class="btn btn-primary">Vérifier</button>
+            </form>
             <div id="verifyResult" style="margin-top:20px"></div>
           </div>
         </div>
