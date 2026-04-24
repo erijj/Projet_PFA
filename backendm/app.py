@@ -2,7 +2,7 @@
 SmartCert — app.py (version complète avec PDF + Email)
 """
 
-from flask      import Flask, jsonify, request, send_file
+from flask      import Flask, jsonify, request, send_file, g
 from flask_cors import CORS
 from web3       import Web3
 import sqlite3, hashlib, uuid, json, os, io
@@ -49,6 +49,7 @@ def init_db():
             status          TEXT DEFAULT 'Vérifié',
             blockchain_hash TEXT,
             tx_hash         TEXT,
+            created_by      TEXT,
             created_at      TEXT DEFAULT (datetime('now'))
         );
         CREATE TABLE IF NOT EXISTS audit_log (
@@ -59,13 +60,25 @@ def init_db():
             timestamp    TEXT DEFAULT (datetime('now')),
             details      TEXT
         );
+        CREATE TABLE IF NOT EXISTS users (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            email            TEXT UNIQUE NOT NULL,
+            password_hash    TEXT NOT NULL,
+            role             TEXT NOT NULL,
+            name             TEXT NOT NULL,
+            created_at       TEXT DEFAULT (datetime('now'))
+        );
     """)
-    # Migration: Add director_name if it doesn't exist
+    # Migration: Add columns if they don't exist
     try:
         conn.execute("ALTER TABLE certificates ADD COLUMN director_name TEXT")
-        conn.commit()
     except:
-        pass # Column already exists
+        pass
+    try:
+        conn.execute("ALTER TABLE certificates ADD COLUMN created_by TEXT")
+    except:
+        pass
+    conn.commit()
         
     conn.close()
     print("✅ Base de données initialisée")
@@ -180,9 +193,9 @@ def issue_certificate():
     try:
         conn.execute("""
             INSERT INTO certificates 
-            (id, recipient_name, email, program, institution, issue_date, director_name, status, blockchain_hash, tx_hash)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (cert_id, data['recipient_name'], data['email'], data['program'], institution, issue_date, director_name, 'Vérifié', blockchain_hash, tx_hash))
+            (id, recipient_name, email, program, institution, issue_date, director_name, status, blockchain_hash, tx_hash, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (cert_id, data['recipient_name'], data['email'], data['program'], institution, issue_date, director_name, 'Vérifié', blockchain_hash, tx_hash, g.user['email']))
         conn.commit()
     except Exception as e:
         conn.close()
@@ -229,10 +242,19 @@ def issue_certificate():
 def get_certificates():
     try:
         conn = get_db()
-        cursor = conn.execute("SELECT * FROM certificates ORDER BY issue_date DESC")
+        email = g.user.get('email')
+        role = g.user.get('role')
+        
+        if role == 'admin':
+            # Admin sees only certificates they created
+            cursor = conn.execute("SELECT * FROM certificates WHERE created_by = ? ORDER BY issue_date DESC", (email,))
+        else:
+            # Student sees only certificates where they are the recipient
+            cursor = conn.execute("SELECT * FROM certificates WHERE email = ? ORDER BY issue_date DESC", (email,))
+            
         rows = cursor.fetchall()
         result = [row_to_dict(row) for row in rows]
-        print(f"📋 {len(result)} certificats envoyés")
+        print(f"📋 {len(result)} certificats envoyés pour {email} ({role})")
         return jsonify(result)
     except Exception as e:
         print(f"❌ Erreur lecture : {e}")
@@ -312,11 +334,21 @@ def update_status(cert_id):
 @app.route('/stats', methods=['GET'])
 @require_auth()
 def get_stats():
-    conn     = get_db()
-    total    = conn.execute("SELECT COUNT(*) FROM certificates").fetchone()[0]
-    verified = conn.execute("SELECT COUNT(*) FROM certificates WHERE status='Vérifié'").fetchone()[0]
-    pending  = conn.execute("SELECT COUNT(*) FROM certificates WHERE status='En attente'").fetchone()[0]
-    revoked  = conn.execute("SELECT COUNT(*) FROM certificates WHERE status='Révoqué'").fetchone()[0]
+    conn = get_db()
+    email = g.user.get('email')
+    role = g.user.get('role')
+    
+    if role == 'admin':
+        condition = "WHERE created_by = ?"
+        params = (email,)
+    else:
+        condition = "WHERE email = ?"
+        params = (email,)
+        
+    total    = conn.execute(f"SELECT COUNT(*) FROM certificates {condition}", params).fetchone()[0]
+    verified = conn.execute(f"SELECT COUNT(*) FROM certificates {condition} AND status='Vérifié'", params).fetchone()[0]
+    pending  = conn.execute(f"SELECT COUNT(*) FROM certificates {condition} AND status='En attente'", params).fetchone()[0]
+    revoked  = conn.execute(f"SELECT COUNT(*) FROM certificates {condition} AND status='Révoqué'", params).fetchone()[0]
     conn.close()
     return jsonify({
         'total':    total,

@@ -26,16 +26,16 @@ function switchRole(role) {
     btnAdmin.classList.remove('active');
     btnCand.classList.add('active');
     // login
-    document.getElementById('loginSubtitle').textContent = 'Connectez-vous à votre espace candidat';
+    document.getElementById('loginSubtitle').textContent = 'Connectez-vous à votre espace étudiant';
     document.getElementById('loginBadge').className = 'role-badge candidate';
-    document.getElementById('loginBadge').innerHTML = '<i class="fas fa-user-graduate"></i> <span>Espace Candidat</span>';
+    document.getElementById('loginBadge').innerHTML = '<i class="fas fa-user-graduate"></i> <span>Espace Étudiant</span>';
     // register
-    document.getElementById('regSubtitle').textContent = 'Inscription espace candidat';
+    document.getElementById('regSubtitle').textContent = 'Inscription espace étudiant';
     document.getElementById('regBadge').className = 'role-badge candidate';
-    document.getElementById('regBadge').innerHTML = '<i class="fas fa-user-graduate"></i> <span>Compte Candidat</span>';
+    document.getElementById('regBadge').innerHTML = '<i class="fas fa-user-graduate"></i> <span>Compte Étudiant</span>';
     document.getElementById('adminFields').style.display = 'none';
     document.getElementById('candidateFields').style.display = 'block';
-    document.getElementById('btnRegisterText').textContent = 'Créer mon compte candidat';
+    document.getElementById('btnRegisterText').textContent = 'Créer mon compte étudiant';
   }
 }
 
@@ -123,13 +123,15 @@ async function doLogin() {
   }
 }
 
-function doRegister() {
+async function doRegister() {
   const first = document.getElementById('regFirst').value.trim();
   const last = document.getElementById('regLast').value.trim();
   const email = document.getElementById('regEmail').value.trim();
   const pass = document.getElementById('regPass').value;
   const conf = document.getElementById('regPassConfirm').value;
   const terms = document.getElementById('terms').checked;
+  const btn = document.getElementById('btnRegister');
+
   hideAlert('regAlertErr');
   hideAlert('regAlertOk');
 
@@ -153,29 +155,69 @@ function doRegister() {
     showAlert('regAlertErr', 'Vous devez accepter les conditions d\'utilisation.');
     return;
   }
+
+  let institution = "";
+  let student_id = "";
+
   if (currentRole === 'admin') {
-    const inst = document.getElementById('regInstitution').value.trim();
-    const role = document.getElementById('regRole').value;
-    if (!inst || !role) {
-      showAlert('regAlertErr', 'Veuillez renseigner l\'institution et le rôle.');
+    institution = document.getElementById('regInstitution').value.trim();
+    if (!institution) {
+      showAlert('regAlertErr', 'Veuillez renseigner l\'institution.');
       return;
     }
   } else {
-    const sid = document.getElementById('regStudentId').value.trim();
-    if (!sid) {
+    student_id = document.getElementById('regStudentId').value.trim();
+    if (!student_id) {
       showAlert('regAlertErr', 'Veuillez entrer votre identifiant étudiant.');
       return;
     }
   }
 
-  // Simulate registration success
-  showAlert('regAlertOk');
-  document.getElementById('btnRegister').disabled = true;
-  setTimeout(() => {
-    showView('viewLogin');
-    document.getElementById('btnRegister').disabled = false;
-    document.getElementById('loginEmail').value = email;
-  }, 1800);
+  // Visual feedback
+  const originalText = btn.innerHTML;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création...';
+  btn.disabled = true;
+
+  const payload = {
+    email,
+    password: pass,
+    name: `${first} ${last}`,
+    role: currentRole, // 'admin' or 'etudiant'
+    institution,
+    student_id
+  };
+  
+  console.log('Sending registration payload:', payload);
+
+  try {
+    const API_BASE = localStorage.getItem('smartcert_api') || 'http://127.0.0.1:5000';
+    const response = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      showAlert('regAlertOk');
+      setTimeout(() => {
+        showView('viewLogin');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        document.getElementById('loginEmail').value = email;
+      }, 2000);
+    } else {
+      showAlert('regAlertErr', data.error || 'Erreur lors de l\'inscription');
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  } catch (error) {
+    console.error('Register error:', error);
+    showAlert('regAlertErr', 'Impossible de contacter le serveur. Vérifiez que le backend est lancé.');
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
 }
 
 // Enter key on login
