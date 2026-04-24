@@ -12,21 +12,21 @@
 
   <style>
     :root {
-      --navy:  #0B3948;
-      --navy2: #416165;
-      --dark:  #416165;
-      --blue:  #ACB0BD;
-      --teal:  #D9DBF1;
-      --tealb: rgba(217, 219, 241, 0.25);
-      --sky:   #ACB0BD;
-      --pale:  #F1F3F9;
-      --muted: #D0CDD7;
-      --white: #ffffff;
+      --navy:  #00111f;
+      --navy2: #001828;
+      --dark:  #071e30;
+      --blue:  #0a3a5c;
+      --teal:  #0fa8c0;
+      --tealb: rgba(15,168,192,0.25);
+      --sky:   #6dd5f0;
+      --pale:  #bdd8e9;
+      --muted: #4e8099;
+      --white: #ebf4fb;
       --green: #22d4a0;
-      --grad:  linear-gradient(135deg, #0B3948 0%, #416165 100%);
+      --grad:  linear-gradient(135deg, #0a3a5c 0%, #0fa8c0 100%);
       --ff:    "Cormorant Garamond", Georgia, serif;
       --fb:    "Jost", sans-serif;
-      --border: rgba(217, 219, 241, 0.22);
+      --border: rgba(15,168,192,0.22);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -45,14 +45,14 @@
       content: '';
       position: fixed; inset: 0; z-index: -1; pointer-events: none;
       background:
-        radial-gradient(ellipse 700px 500px at 15% 20%, rgba(217, 219, 241, 0.08), transparent),
-        radial-gradient(ellipse 600px 400px at 85% 80%, rgba(65, 97, 101, 0.18), transparent);
+        radial-gradient(ellipse 700px 500px at 15% 20%, rgba(15,168,192,0.08), transparent),
+        radial-gradient(ellipse 600px 400px at 85% 80%, rgba(10,58,92,0.18), transparent);
     }
 
     /* ── NAVBAR ── */
     .navbar {
       flex-shrink: 0;
-      background: rgba(11, 57, 72, 0.9);
+      background: rgba(0,17,31,0.9);
       border-bottom: 1px solid var(--tealb);
       backdrop-filter: blur(20px);
       padding: 10px 25px;
@@ -63,7 +63,7 @@
     .brand-logo { height: 46px; width: auto; }
     .brand-name {
       font-family: var(--ff); font-size: 1.55rem; font-weight: 700;
-      background: linear-gradient(90deg, #ffffff 0%, #ACB0BD 50%, #D9DBF1 100%);
+      background: linear-gradient(90deg, #ffffff 0%, #6dd5f0 50%, #0fa8c0 100%);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       line-height: 1;
     }
@@ -77,7 +77,7 @@
       color: var(--sky); font-size: 0.72rem; font-weight: 600;
       text-decoration: none; transition: all .2s;
     }
-    .btn-home:hover { background: rgba(217, 219, 241, 0.16); color: #fff; border-color: var(--teal); }
+    .btn-home:hover { background: rgba(15,168,192,0.16); color: #fff; border-color: var(--teal); }
 
     /* ── MAIN LAYOUT ── */
     .app-main { display: flex; flex: 1; overflow: hidden; }
@@ -91,28 +91,28 @@
     @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
     .av { width: 35px; height: 35px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .av.bot { background: rgba(217, 219, 241, 0.15); border: 1px solid var(--tealb); }
+    .av.bot { background: rgba(15,168,192,0.15); border: 1px solid var(--tealb); }
     .av.user { background: var(--grad); }
 
     .bubble-wrap { display: flex; flex-direction: column; }
     .msg.user .bubble-wrap { align-items: flex-end; }
 
     .bubble { padding: 12px 16px; border-radius: 15px; font-size: 0.88rem; line-height: 1.6; }
-    .bubble.bot { background: rgba(11, 57, 72, 0.6); border: 1px solid var(--border); border-bottom-left-radius: 2px; }
+    .bubble.bot { background: rgba(10,58,92,0.6); border: 1px solid var(--border); border-bottom-left-radius: 2px; }
     .bubble.user { background: var(--grad); color: #fff; border-bottom-right-radius: 2px; }
 
     .msg-time { font-size: 0.65rem; color: var(--muted); margin-top: 4px; padding: 0 5px; }
 
     .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
     .chip { 
-        padding: 5px 12px; background: rgba(217, 219, 241, 0.1); border: 1px solid var(--tealb);
+        padding: 5px 12px; background: rgba(15,168,192,0.1); border: 1px solid var(--tealb);
         border-radius: 100px; font-size: 0.72rem; color: var(--sky); cursor: pointer; transition: 0.2s;
     }
-    .chip:hover { background: rgba(217, 219, 241, 0.2); border-color: var(--teal); }
+    .chip:hover { background: rgba(15,168,192,0.2); border-color: var(--teal); }
 
     /* ── INPUT BAR ── */
-    .input-container { padding: 20px; background: rgba(11, 57, 72, 0.9); border-top: 1px solid var(--border); }
-    .input-row { display: flex; gap: 10px; background: rgba(65, 97, 101, 0.4); border: 1px solid var(--border); border-radius: 15px; padding: 5px; }
+    .input-container { padding: 20px; background: rgba(0,17,31,0.9); border-top: 1px solid var(--border); }
+    .input-row { display: flex; gap: 10px; background: rgba(10,58,92,0.4); border: 1px solid var(--border); border-radius: 15px; padding: 5px; }
     .msg-input { flex: 1; background: transparent; border: none; color: #fff; padding: 10px 15px; outline: none; resize: none; max-height: 100px; }
     .send-btn { width: 45px; height: 45px; background: var(--grad); border: none; border-radius: 12px; color: #fff; cursor: pointer; }
 
