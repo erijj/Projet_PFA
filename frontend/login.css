@@ -7,22 +7,22 @@
 }
 
 :root {
-  --navy: #00111f;
-  --navy2: #001828;
-  --dark: #071e30;
-  --blue: #0a3a5c;
-  --teal: #0fa8c0;
-  --teal2: rgba(15, 168, 192, 0.18);
-  --tealb: rgba(15, 168, 192, 0.25);
-  --sky: #6dd5f0;
-  --pale: #bdd8e9;
-  --muted: #4e8099;
-  --white: #ebf4fb;
+  --navy: #0B3948;
+  --navy2: #416165;
+  --dark: #416165;
+  --blue: #ACB0BD;
+  --teal: #D9DBF1;
+  --teal2: rgba(217, 219, 241, 0.18);
+  --tealb: rgba(217, 219, 241, 0.25);
+  --sky: #ACB0BD;
+  --pale: #F1F3F9;
+  --muted: #D0CDD7;
+  --white: #ffffff;
   --green: #22d4a0;
   --amber: #f59e0b;
   --red: #f87171;
-  --grad: linear-gradient(135deg, #0a3a5c 0%, #0fa8c0 100%);
-  --grad2: linear-gradient(135deg, #6dd5f0, #22d4a0);
+  --grad: linear-gradient(135deg, #0B3948 0%, #416165 100%);
+  --grad2: linear-gradient(135deg, #ACB0BD, #D9DBF1);
   --ff: "Cormorant Garamond", Georgia, serif;
   --fb: "Jost", sans-serif;
 }
@@ -48,20 +48,20 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 700px 500px at 15% 20%, rgba(15, 168, 192, 0.09), transparent),
-    radial-gradient(ellipse 600px 400px at 85% 80%, rgba(10, 58, 92, 0.18), transparent),
-    url("data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='25' cy='25' r='1' fill='rgba(15,168,192,0.06)'/%3E%3C/svg%3E");
+    radial-gradient(ellipse 700px 500px at 15% 20%, rgba(217, 219, 241, 0.09), transparent),
+    radial-gradient(ellipse 600px 400px at 85% 80%, rgba(65, 97, 101, 0.18), transparent),
+    url("data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='25' cy='25' r='1' fill='rgba(217,219,241,0.06)'/%3E%3C/svg%3E");
 }
 
 .navbar {
-  background: rgba(0, 17, 31, 0.88);
+  background: rgba(11, 57, 72, 0.88);
   backdrop-filter: blur(18px);
   border-bottom: 1px solid var(--tealb);
   padding: 13px 0;
 }
 
 .navbar.scrolled {
-  background: rgba(0, 17, 31, 0.98);
+  background: rgba(11, 57, 72, 0.98);
 }
 
 .navbar-brand {
@@ -85,7 +85,7 @@ body::before {
   font-size: 1.55rem;
   font-weight: 700;
   line-height: 1;
-  background: linear-gradient(90deg, #ffffff 0%, #6dd5f0 50%, #0fa8c0 100%);
+  background: linear-gradient(90deg, #ffffff 0%, #ead7d7 50%, #b49fcc 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -114,12 +114,12 @@ body::before {
 .auth-card {
   width: 100%;
   max-width: 480px;
-  background: linear-gradient(160deg, rgba(10, 58, 92, 0.55), rgba(0, 24, 40, 0.75));
+  background: linear-gradient(160deg, rgba(65, 97, 101, 0.55), rgba(11, 57, 72, 0.75));
   border: 1px solid var(--tealb);
   border-radius: 28px;
   padding: 44px 40px 40px;
   backdrop-filter: blur(12px);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(15, 168, 192, 0.08) inset;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(180, 159, 204, 0.08) inset;
   animation: slideUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -137,13 +137,13 @@ body::before {
 
 /* ROLE TOGGLE */
 .role-toggle {
-  display: flex;
-  background: rgba(10, 58, 92, 0.45);
+  background: rgba(65, 97, 101, 0.45);
   border: 1px solid var(--tealb);
   border-radius: 14px;
   padding: 4px;
   margin-bottom: 30px;
   position: relative;
+  display: flex;
 }
 
 .role-toggle-slider {
@@ -154,7 +154,7 @@ body::before {
   background: var(--grad);
   border-radius: 11px;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 4px 16px rgba(15, 168, 192, 0.3);
+  box-shadow: 0 4px 16px rgba(180, 159, 204, 0.3);
   left: 4px;
 }
 
@@ -234,8 +234,8 @@ body::before {
 
 .input-wrap input {
   width: 100%;
-  background: rgba(10, 58, 92, 0.5);
-  border: 1px solid rgba(15, 168, 192, 0.2);
+  background: rgba(65, 97, 101, 0.5);
+  border: 1px solid rgba(180, 159, 204, 0.2);
   border-radius: 12px;
   padding: 12px 16px 12px 42px;
   color: var(--white);
@@ -247,7 +247,7 @@ body::before {
 .input-wrap input:focus {
   outline: none;
   border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(15, 168, 192, 0.13);
+  box-shadow: 0 0 0 3px rgba(180, 159, 204, 0.13);
 }
 
 .input-wrap input:focus~.input-icon {
@@ -292,8 +292,8 @@ body::before {
 }
 
 .role-badge.admin {
-  background: rgba(15, 168, 192, 0.15);
-  border: 1px solid rgba(15, 168, 192, 0.3);
+  background: rgba(180, 159, 204, 0.15);
+  border: 1px solid rgba(180, 159, 204, 0.3);
   color: var(--teal);
 }
 
@@ -319,7 +319,7 @@ body::before {
   align-items: center;
   justify-content: center;
   gap: 9px;
-  box-shadow: 0 6px 24px rgba(15, 168, 192, 0.32);
+  box-shadow: 0 6px 24px rgba(180, 159, 204, 0.32);
   transition: transform 0.2s, box-shadow 0.2s;
   margin-top: 6px;
   letter-spacing: 0.5px;
@@ -327,7 +327,7 @@ body::before {
 
 .btn-submit:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 32px rgba(15, 168, 192, 0.42);
+  box-shadow: 0 10px 32px rgba(180, 159, 204, 0.42);
 }
 
 .btn-submit:active {
@@ -365,7 +365,7 @@ body::before {
   content: "";
   flex: 1;
   height: 1px;
-  background: rgba(15, 168, 192, 0.15);
+  background: rgba(180, 159, 204, 0.15);
 }
 
 .divider span {
@@ -452,8 +452,8 @@ body::before {
 /* SELECT */
 .input-wrap select {
   width: 100%;
-  background: rgba(10, 58, 92, 0.5);
-  border: 1px solid rgba(15, 168, 192, 0.2);
+  background: rgba(65, 97, 101, 0.5);
+  border: 1px solid rgba(180, 159, 204, 0.2);
   border-radius: 12px;
   padding: 12px 16px 12px 42px;
   color: var(--white);
@@ -466,7 +466,7 @@ body::before {
 
 :root {
   --gold: #e6b85e;
-  --sky: #2b7a8a;
+  --sky: #8b5cf6;
   --light: #f8fafc;
 }
 
@@ -536,7 +536,7 @@ body::before {
 .input-wrap select:focus {
   outline: none;
   border-color: var(--teal);
-  box-shadow: 0 0 0 3px rgba(15, 168, 192, 0.13);
+  box-shadow: 0 0 0 3px rgba(180, 159, 204, 0.13);
 }
 
 .input-wrap select option {
@@ -578,7 +578,7 @@ footer {
   position: relative;
   z-index: 1;
   padding: 20px 0;
-  border-top: 1px solid rgba(15, 168, 192, 0.1);
+  border-top: 1px solid rgba(180, 159, 204, 0.1);
   text-align: center;
 }
 

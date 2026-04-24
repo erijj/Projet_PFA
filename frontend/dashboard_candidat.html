@@ -10,17 +10,17 @@
     rel="stylesheet">
   <style>
     :root {
-      --navy: #001D39;
-      --blue1: #0A4174;
-      --teal: #4E8EA2;
-      --sky: #6EA2B3;
-      --accent: #7BBDE8;
-      --pale: #BDD8E9;
-      --green: #10b981;
-      --red: #ef4444;
-      --border: rgba(78, 142, 162, 0.22);
-      --card: rgba(10, 65, 116, 0.45);
-      --grad: linear-gradient(135deg, #0A4174, #4E8EA2)
+      --navy: #0B3948;
+      --blue1: #416165;
+      --teal: #D9DBF1;
+      --sky: #ACB0BD;
+      --accent: #ACB0BD;
+      --pale: #F1F3F9;
+      --green: #22d4a0;
+      --red: #f87171;
+      --border: rgba(217, 219, 241, 0.22);
+      --card: rgba(65, 97, 101, 0.45);
+      --grad: linear-gradient(135deg, #0B3948, #416165)
     }
 
     *,
@@ -43,7 +43,7 @@
       content: '';
       position: fixed;
       inset: 0;
-      background-image: linear-gradient(rgba(78, 142, 162, .035) 1px, transparent 1px), linear-gradient(90deg, rgba(78, 142, 162, .035) 1px, transparent 1px);
+      background-image: linear-gradient(rgba(217, 219, 241, .035) 1px, transparent 1px), linear-gradient(90deg, rgba(217, 219, 241, .035) 1px, transparent 1px);
       background-size: 44px 44px;
       pointer-events: none;
       z-index: 0
@@ -62,7 +62,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 14px 28px;
-      background: rgba(0, 29, 57, .94);
+      background: rgba(11, 57, 72, .94);
       border-bottom: 1px solid var(--border);
       backdrop-filter: blur(20px)
     }
@@ -171,8 +171,8 @@
       align-items: center;
       gap: 7px;
       padding: 8px 16px;
-      background: rgba(123, 189, 232, 0.1);
-      border: 1px solid rgba(123, 189, 232, 0.2);
+      background: rgba(217, 219, 241, 0.1);
+      border: 1px solid rgba(217, 219, 241, 0.2);
       border-radius: 10px;
       color: var(--accent);
       cursor: pointer;
@@ -185,10 +185,10 @@
     }
 
     .btn-chatbot:hover {
-      background: rgba(123, 189, 232, 0.2);
+      background: rgba(217, 219, 241, 0.2);
       border-color: var(--accent);
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(123, 189, 232, 0.1);
+      box-shadow: 0 4px 12px rgba(217, 219, 241, 0.1);
     }
 
     .main {
@@ -391,7 +391,7 @@
       cursor: pointer;
       white-space: nowrap;
       transition: transform .2s;
-      box-shadow: 0 0 18px rgba(78, 142, 162, .3)
+      box-shadow: 0 0 18px rgba(217, 219, 241, .3)
     }
 
     .btn-verify:hover {
@@ -488,7 +488,7 @@
     }
 
     .toast {
-      background: rgba(10, 65, 116, .92);
+      background: rgba(30, 13, 64, .92);
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 12px 16px;
@@ -537,7 +537,7 @@
       <div class="brand">
         <div class="brand-logo">
           <img src="logo.png" alt="SmartCert" class="logo-img"
-            onerror="this.style.display='none';this.parentElement.innerHTML='<span style=font-weight:700;color:#0A4174;font-size:14px>SC</span>'">
+            onerror="this.style.display='none';this.parentElement.innerHTML='<span style=font-weight:700;color:#4c1d95;font-size:14px>SC</span>'">
         </div>
 
         <div>
@@ -617,40 +617,39 @@
       })();
 
       return `
-  <div style="background:white; border:8px double #C9A03D; padding:30px 20px; position:relative; box-shadow:0 15px 45px rgba(0,0,0,0.1); font-family:'Cormorant Garamond', serif; width:100%; max-width:650px; margin:0 auto; color:#1A2A4F; text-align:center; min-height:800px; display:flex; flex-direction:column; box-sizing:border-box;">
-    
+  <div style="background:white; border:8px double #C9A03D; padding:30px 20px; position:relative; box-shadow:0 15px 45px rgba(0,0,0,0.1); font-family:'Cormorant Garamond', serif; width:100%; max-width:650px; margin:0 auto; color:#1e133a; text-align:center; min-height:800px; display:flex; flex-direction:column; box-sizing:border-box;">
     <!-- Header -->
-    <div style="font-family:'Jost', sans-serif; font-size:12px; letter-spacing:4px; font-weight:500; margin-bottom:10px; color:#0A4174;">
+    <div style="font-family:'Jost', sans-serif; font-size:12px; letter-spacing:4px; font-weight:500; margin-bottom:10px; color:#416165;">
       ${inst.toUpperCase()}
     </div>
     
-    <div style="font-size:45px; font-weight:700; letter-spacing:6px; margin-bottom:2px; color:#1A2A4F;">
+    <div style="font-size:45px; font-weight:700; letter-spacing:6px; margin-bottom:2px; color:#1e133a;">
       CERTIFICAT
     </div>
     
-    <div style="font-family:'Jost', sans-serif; font-size:9px; letter-spacing:3px; color:#6A8FAA; margin-bottom:30px; text-transform:uppercase;">
+    <div style="font-family:'Jost', sans-serif; font-size:9px; letter-spacing:3px; color:#ACB0BD; margin-bottom:30px; text-transform:uppercase;">
       DE RÉUSSITE — CERTIFICATE OF ACHIEVEMENT
     </div>
-
+ 
     <!-- Body -->
-    <div style="font-family:'Jost', sans-serif; font-size:12px; color:#4E8EA2; margin-bottom:8px; font-style:italic;">
+    <div style="font-family:'Jost', sans-serif; font-size:12px; color:#94a3b8; margin-bottom:8px; font-style:italic;">
       La présente certifie que
     </div>
     
-    <div style="font-size:38px; font-weight:700; color:#1A2A4F; margin-bottom:5px; line-height:1.2;">
+    <div style="font-size:38px; font-weight:700; color:#1e133a; margin-bottom:5px; line-height:1.2;">
       ${name}
     </div>
     
     <div style="width:180px; height:1px; background:linear-gradient(90deg, transparent, #C9A03D, transparent); margin:15px auto;"></div>
     
-    <div style="font-family:'Jost', sans-serif; font-size:12px; color:#6A8FAA; margin-bottom:8px;">
+    <div style="font-family:'Jost', sans-serif; font-size:12px; color:#ACB0BD; margin-bottom:8px;">
       a complété avec succès le programme
     </div>
     
-    <div style="font-size:24px; font-weight:700; color:#0A4174; margin-bottom:auto; padding:0 20px;">
+    <div style="font-size:24px; font-weight:700; color:#416165; margin-bottom:auto; padding:0 20px;">
       ${prog}
     </div>
-
+ 
     <!-- Bottom Section -->
     <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:40px; border-top:1px solid #F0F0F0; padding-top:30px;">
       
@@ -659,15 +658,15 @@
         <div style="margin-bottom:10px;">
           <img src="ethereum_seal.png" alt="Ethereum Seal" style="width:85px; height:85px; object-fit:contain; filter:drop-shadow(0 4px 8px rgba(0,0,0,0.1));" />
         </div>
-        <div style="font-family:'Jost', sans-serif; font-size:8px; color:#8AACBE; text-transform:uppercase;">Date d'émission</div>
-        <div style="font-family:'Jost', sans-serif; font-size:13px; font-weight:700; color:#1A2A4F; margin-top:3px;">${dateFr}</div>
+        <div style="font-family:'Jost', sans-serif; font-size:8px; color:#94a3b8; text-transform:uppercase;">Date d'émission</div>
+        <div style="font-family:'Jost', sans-serif; font-size:13px; font-weight:700; color:#1e133a; margin-top:3px;">${dateFr}</div>
       </div>
       
       <!-- Middle: Director -->
       <div style="flex:1; display:flex; flex-direction:column; align-items:center; padding-bottom:10px;">
-        <div style="font-size:22px; font-weight:700; color:#1A2A4F; margin-bottom:3px; font-style:italic;">Directeur</div>
-        <div style="width:90px; height:1px; background:#1A2A4F; margin-bottom:5px;"></div>
-        <div style="font-family:'Jost', sans-serif; font-size:10px; color:#8AACBE; font-weight:700; text-transform:uppercase;">${director.toUpperCase()}</div>
+        <div style="font-size:22px; font-weight:700; color:#1e133a; margin-bottom:3px; font-style:italic;">Directeur</div>
+        <div style="width:90px; height:1px; background:#1e133a; margin-bottom:5px;"></div>
+        <div style="font-family:'Jost', sans-serif; font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase;">${director.toUpperCase()}</div>
       </div>
       
       <!-- Right: QR Code -->
@@ -676,13 +675,13 @@
            <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://smartcert.app/verify/${cid}" alt="QR Code" style="width:55px; height:55px; display:block;" />
         </div>
         <div style="font-family:'Jost', sans-serif; font-size:7px; color:#C9A03D; font-weight:700; text-transform:uppercase; margin-top:8px;">Verified on Blockchain</div>
-        <div style="font-family:'Space Mono', monospace; font-size:6.5px; color:#8AACBE; margin-top:2px;">TX: ${tx.substring(0, 12)}...</div>
+        <div style="font-family:'Space Mono', monospace; font-size:6.5px; color:#94a3b8; margin-top:2px;">TX: ${tx.substring(0, 12)}...</div>
       </div>
       
     </div>
 
     <!-- Network Info -->
-    <div style="margin-top:20px; font-family:'Space Mono', monospace; font-size:7px; color:rgba(110,162,179,0.5);">
+    <div style="margin-top:20px; font-family:'Space Mono', monospace; font-size:7px; color:rgba(148,163,184,0.5);">
       BLOCKCHAIN: ETHEREUM_GANACHE | ID: ${cid}
     </div>
 

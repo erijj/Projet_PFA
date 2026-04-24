@@ -12,23 +12,23 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --navy:  #00111f;
-      --navy2: #001828;
-      --dark:  #071e30;
-      --blue:  #0a3a5c;
-      --teal:  #0fa8c0;
-      --teal2: rgba(15,168,192,0.18);
-      --tealb: rgba(15,168,192,0.25);
-      --sky:   #6dd5f0;
-      --pale:  #bdd8e9;
-      --muted: #4e8099;
-      --white: #ebf4fb;
+      --navy:  #0B3948;
+      --navy2: #416165;
+      --dark:  #416165;
+      --blue:  #ACB0BD;
+      --teal:  #D9DBF1;
+      --teal2: rgba(217, 219, 241, 0.18);
+      --tealb: rgba(217, 219, 241, 0.25);
+      --sky:   #ACB0BD;
+      --pale:  #F1F3F9;
+      --muted: #D0CDD7;
+      --white: #ffffff;
       --green: #22d4a0;
       --amber: #f59e0b;
       --gold:  #e6b85e;
-      --red:   #f87171;
-      --grad:  linear-gradient(135deg, #0a3a5c 0%, #0fa8c0 100%);
-      --grad2: linear-gradient(135deg, #6dd5f0, #22d4a0);
+      --red: #f87171;
+      --grad:  linear-gradient(135deg, #0B3948 0%, #416165 100%);
+      --grad2: linear-gradient(135deg, #ACB0BD, #D9DBF1);
       --ff:    "Cormorant Garamond", Georgia, serif;
       --fb:    "Jost", sans-serif;
     }
@@ -52,23 +52,23 @@
       z-index: 0;
       pointer-events: none;
       background:
-        radial-gradient(ellipse 700px 500px at 15% 20%, rgba(15,168,192,0.09), transparent),
-        radial-gradient(ellipse 600px 400px at 85% 80%, rgba(10,58,92,0.18), transparent),
-        url("data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='25' cy='25' r='1' fill='rgba(15,168,192,0.06)'/%3E%3C/svg%3E");
+        radial-gradient(ellipse 700px 500px at 15% 20%, rgba(217, 219, 241, 0.09), transparent),
+        radial-gradient(ellipse 600px 400px at 85% 80%, rgba(65, 97, 101, 0.18), transparent),
+        url("data:image/svg+xml,%3Csvg width='50' height='50' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='25' cy='25' r='1' fill='rgba(217,219,241,0.06)'/%3E%3C/svg%3E");
     }
 
     /* ══════════════════════════════════════════════
        NAVBAR — strictement identique à login.html
     ══════════════════════════════════════════════ */
     .navbar {
-      background: rgba(0,17,31,0.88) !important;
+      background: rgba(11, 57, 72, 0.88) !important;
       backdrop-filter: blur(18px);
       border-bottom: 1px solid var(--tealb);
       padding: 13px 0;
       position: relative;
       z-index: 10;
     }
-    .navbar.scrolled { background: rgba(0,17,31,0.98) !important; }
+    .navbar.scrolled { background: rgba(11, 57, 72, 0.98) !important; }
 
     .navbar-brand {
       display: flex;
@@ -82,7 +82,7 @@
       font-size: 1.55rem;
       font-weight: 700;
       line-height: 1;
-      background: linear-gradient(90deg, #ffffff 0%, #6dd5f0 50%, #0fa8c0 100%);
+      background: linear-gradient(90deg, #ffffff 0%, #ACB0BD 50%, #D9DBF1 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -125,7 +125,7 @@
       align-items: center;
       gap: 7px;
       padding: 5px 16px;
-      background: rgba(15,168,192,0.1);
+      background: rgba(217, 219, 241, 0.1);
       border: 1px solid var(--tealb);
       border-radius: 100px;
       font-size: 0.68rem;
@@ -164,12 +164,12 @@
     }
 
     .search-card {
-      background: linear-gradient(160deg, rgba(10,58,92,0.55), rgba(0,24,40,0.75));
+      background: linear-gradient(160deg, rgba(65, 97, 101, 0.55), rgba(11, 57, 72, 0.75));
       border: 1px solid var(--tealb);
       border-radius: 24px;
       padding: 32px 36px;
       backdrop-filter: blur(12px);
-      box-shadow: 0 24px 80px rgba(0,0,0,.4), 0 0 0 1px rgba(15,168,192,0.06) inset;
+      box-shadow: 0 24px 80px rgba(0,0,0,.4), 0 0 0 1px rgba(217, 219, 241, 0.06) inset;
       animation: slideUp .5s cubic-bezier(0.16,1,0.3,1) both;
     }
 
@@ -183,7 +183,7 @@
     .cert-input {
       flex: 1;
       background: rgba(10,58,92,0.5);
-      border: 1px solid rgba(15,168,192,0.2);
+      border: 1px solid rgba(180, 159, 204, 0.2);
       border-radius: 12px;
       padding: 13px 18px;
       color: var(--white);
@@ -194,7 +194,7 @@
     }
     .cert-input:focus {
       border-color: var(--teal);
-      box-shadow: 0 0 0 3px rgba(15,168,192,0.13);
+      box-shadow: 0 0 0 3px rgba(217, 219, 241, 0.13);
     }
     .cert-input::placeholder { color: var(--muted); opacity: .7; }
 
@@ -209,14 +209,14 @@
       font-size: 0.88rem;
       cursor: pointer;
       white-space: nowrap;
-      box-shadow: 0 6px 24px rgba(15,168,192,0.32);
+      box-shadow: 0 6px 24px rgba(217, 219, 241, 0.32);
       transition: transform .2s, box-shadow .2s;
       letter-spacing: .5px;
       display: flex;
       align-items: center;
       gap: 8px;
     }
-    .btn-verify:hover  { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(15,168,192,0.42); }
+    .btn-verify:hover  { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(217, 219, 241, 0.42); }
     .btn-verify:active { transform: translateY(0); }
     .btn-verify:disabled { opacity: .55; cursor: not-allowed; transform: none; }
 
@@ -237,7 +237,7 @@
     }
 
     .cert-valid-card {
-      background: linear-gradient(160deg, rgba(10,58,92,0.5), rgba(0,24,40,0.72));
+      background: linear-gradient(160deg, rgba(65, 97, 101, 0.5), rgba(11, 57, 72, 0.72));
       border: 1px solid rgba(34,212,160,0.28);
       border-radius: 24px;
       overflow: hidden;
@@ -341,7 +341,7 @@
     /* Hash */
     .hash-section { padding: 0 26px 20px; }
     .hash-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-    .hash-display { background: rgba(10,58,92,0.5); border: 1px solid rgba(15,168,192,0.2); border-radius: 10px; padding: 11px 14px; font-family: "Courier New", monospace; font-size: 0.72rem; color: var(--sky); word-break: break-all; line-height: 1.8; }
+    .hash-display { background: rgba(65, 97, 101, 0.5); border: 1px solid rgba(217, 219, 241, 0.2); border-radius: 10px; padding: 11px 14px; font-family: "Courier New", monospace; font-size: 0.72rem; color: var(--sky); word-break: break-all; line-height: 1.8; }
 
     /* Actions */
     .valid-footer { padding: 16px 26px; border-top: 1px solid rgba(34,212,160,0.12); display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
@@ -351,7 +351,7 @@
     .btn-dl:hover { background: rgba(34,212,160,0.2); }
 
     /* Carte invalide */
-    .cert-invalid-card { background: linear-gradient(160deg, rgba(10,58,92,0.5), rgba(0,24,40,0.72)); border: 1px solid rgba(248,113,113,0.25); border-radius: 24px; padding: 40px 32px; backdrop-filter: blur(12px); animation: fadeUp .4s ease; text-align: center; }
+    .cert-invalid-card { background: linear-gradient(160deg, rgba(65, 97, 101, 0.5), rgba(11, 57, 72, 0.72)); border: 1px solid rgba(248,113,113,0.25); border-radius: 24px; padding: 40px 32px; backdrop-filter: blur(12px); animation: fadeUp .4s ease; text-align: center; }
     .invalid-icon  { font-size: 3rem; margin-bottom: 14px; color: var(--red); }
     .invalid-title { font-family: var(--ff); font-size: 1.5rem; font-weight: 700; color: var(--red); margin-bottom: 10px; }
     .invalid-msg   { font-size: 0.85rem; color: var(--muted); line-height: 1.8; }
@@ -503,14 +503,10 @@
 
         if (r.ok && data.valid) {
           const url = `${location.origin}${location.pathname}?id=${encodeURIComponent(id)}`;
-          const el  = document.getElementById('shareUrl');
-          if (el) el.value = url;
+          document.getElementById('shareUrl').value = url;
         }
-      } catch (err) {
-        console.error("Verification Error:", err);
-        if (!res.innerHTML.includes('cert-valid-card')) {
-          res.innerHTML = `<div class="cert-invalid-card"><div class="invalid-title">Serveur non disponible</div></div>`;
-        }
+      } catch(e) {
+        res.innerHTML = `<div style="text-align:center;color:var(--red);">Erreur serveur.</div>`;
       } finally {
         isVerifying = false;
         btn.disabled = false;
@@ -519,7 +515,6 @@
       }
     }
 
-    /* ─── Carte valide ─── */
     function buildValid(d) {
       const date = (d.issue_date || d.date || '—').split('T')[0];
       const dateFr = (() => { 
@@ -552,35 +547,35 @@
           </div>
 
           <!-- Professional Certificate Layout -->
-          <div style="background:white; border:8px double #C9A03D; padding:25px 15px; position:relative; font-family:'Cormorant Garamond', serif; width:100%; max-width:600px; margin:20px auto; color:#1A2A4F; text-align:center; min-height:750px; display:flex; flex-direction:column; box-sizing:border-box; box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+          <div style="background:white; border:8px double #C9A03D; padding:25px 15px; position:relative; font-family:'Cormorant Garamond', serif; width:100%; max-width:600px; margin:20px auto; color:#1e133a; text-align:center; min-height:750px; display:flex; flex-direction:column; box-sizing:border-box; box-shadow:0 10px 30px rgba(0,0,0,0.1);">
             
-            <div style="font-family:'Jost', sans-serif; font-size:11px; letter-spacing:4px; font-weight:500; margin-bottom:10px; color:#0A4174;">
+            <div style="font-family:'Jost', sans-serif; font-size:11px; letter-spacing:4px; font-weight:500; margin-bottom:10px; color:#416165;">
               ${inst.toUpperCase()}
             </div>
             
-            <div style="font-size:40px; font-weight:700; letter-spacing:6px; margin-bottom:2px; color:#1A2A4F;">
+            <div style="font-size:40px; font-weight:700; letter-spacing:6px; margin-bottom:2px; color:#1e133a;">
               CERTIFICAT
             </div>
             
-            <div style="font-family:'Jost', sans-serif; font-size:8px; letter-spacing:3px; color:#6A8FAA; margin-bottom:25px; text-transform:uppercase;">
+            <div style="font-family:'Jost', sans-serif; font-size:8px; letter-spacing:3px; color:#ACB0BD; margin-bottom:25px; text-transform:uppercase;">
               DE RÉUSSITE — CERTIFICATE OF ACHIEVEMENT
             </div>
 
-            <div style="font-family:'Jost', sans-serif; font-size:11px; color:#4E8EA2; margin-bottom:6px; font-style:italic;">
+            <div style="font-family:'Jost', sans-serif; font-size:11px; color:#94a3b8; margin-bottom:6px; font-style:italic;">
               La présente certifie que
             </div>
             
-            <div style="font-size:34px; font-weight:700; color:#1A2A4F; margin-bottom:5px; line-height:1.1;">
+            <div style="font-size:34px; font-weight:700; color:#1e133a; margin-bottom:5px; line-height:1.1;">
               ${name}
             </div>
             
             <div style="width:150px; height:1px; background:linear-gradient(90deg, transparent, #C9A03D, transparent); margin:15px auto;"></div>
             
-            <div style="font-family:'Jost', sans-serif; font-size:11px; color:#6A8FAA; margin-bottom:6px;">
+            <div style="font-family:'Jost', sans-serif; font-size:11px; color:#ACB0BD; margin-bottom:6px;">
               a complété avec succès le programme
             </div>
             
-            <div style="font-size:20px; font-weight:700; color:#0A4174; margin-bottom:auto;">
+            <div style="font-size:20px; font-weight:700; color:#416165; margin-bottom:auto;">
               ${prog}
             </div>
 
@@ -588,19 +583,22 @@
               
               <div style="flex:1; display:flex; flex-direction:column; align-items:center;">
                 <img src="ethereum_seal.png" alt="Ethereum Seal" style="width:75px; height:75px; object-fit:contain; margin-bottom:8px;" />
-                <div style="font-family:'Jost', sans-serif; font-size:7px; color:#8AACBE; text-transform:uppercase;">Date d'émission</div>
-                <div style="font-family:'Jost', sans-serif; font-size:11px; font-weight:700; color:#1A2A4F;">${dateFr}</div>
+                <div style="font-family:'Jost', sans-serif; font-size:7px; color:#94a3b8; text-transform:uppercase;">Date d'émission</div>
+                <div style="font-family:'Jost', sans-serif; font-size:11px; font-weight:700; color:#1e133a;">${dateFr}</div>
               </div>
               
               <div style="flex:1; display:flex; flex-direction:column; align-items:center; padding-bottom:10px;">
-                <div style="font-size:22px; font-weight:700; color:#1A2A4F; margin-bottom:3px; font-style:italic;">Directeur</div>
-                <div style="width:80px; height:1px; background:#1A2A4F; margin-bottom:5px;"></div>
-                <div style="font-family:'Jost', sans-serif; font-size:10px; color:#8AACBE; font-weight:700; text-transform:uppercase;">${director.toUpperCase()}</div>
+                <div style="font-size:22px; font-weight:700; color:#1e133a; margin-bottom:3px; font-style:italic;">Directeur</div>
+                <div style="width:80px; height:1px; background:#1e133a; margin-bottom:5px;"></div>
+                <div style="font-family:'Jost', sans-serif; font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase;">${director.toUpperCase()}</div>
               </div>
               
               <div style="flex:1; display:flex; flex-direction:column; align-items:center;">
                 <div style="padding:8px; background:#F9F9F9; border-radius:6px; border:1px solid #EEE;">
                   <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${location.origin}${location.pathname}?id=${cid}" alt="QR Code" style="width:45px; height:45px; display:block;" />
+                </div>
+                <div style="font-family:'Jost', sans-serif; font-size:6px; color:#C9A03D; font-weight:700; text-transform:uppercase; margin-top:6px;">Verified on Blockchain</div>
+                <div style="font-family:'Space Mono', monospace; font-size:6px; color:#94a3b8;">TX: ${tx.substring(0,12)}...</div>
                 </div>
                 <div style="font-family:'Jost', sans-serif; font-size:6px; color:#C9A03D; font-weight:700; text-transform:uppercase; margin-top:6px;">Verified on Blockchain</div>
                 <div style="font-family:'Space Mono', monospace; font-size:6px; color:#8AACBE;">TX: ${tx.substring(0,12)}...</div>
