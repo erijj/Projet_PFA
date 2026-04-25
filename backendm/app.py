@@ -198,8 +198,7 @@ def issue_certificate():
         """, (cert_id, data['recipient_name'], data['email'], data['program'], institution, issue_date, director_name, 'Vérifié', blockchain_hash, tx_hash, g.user['email']))
         conn.commit()
     except Exception as e:
-        conn.close()
-        print(f"❌ Erreur SQL : {e}")
+        print(f"[ERREUR SQL] {e}")
         return jsonify({'error': 'Erreur lors de la sauvegarde'}), 500
     finally:
         conn.close()
@@ -224,7 +223,7 @@ def issue_certificate():
         email_ok = send_certificate_email(cert, pdf_buf)
         log_action('EMAIL_SENT' if email_ok else 'EMAIL_FAILED', cert_id, data['email'])
     except Exception as e:
-        print(f"⚠ Email/PDF error: {e}")
+        print(f"[AVERTISSEMENT] Email/PDF error: {e}")
         email_ok = False
 
     log_action('ISSUE', cert_id, f"Émis pour {data['recipient_name']}")
@@ -254,10 +253,10 @@ def get_certificates():
             
         rows = cursor.fetchall()
         result = [row_to_dict(row) for row in rows]
-        print(f"📋 {len(result)} certificats envoyés pour {email} ({role})")
+        print(f"[OK] {len(result)} certificats envoyes pour {email} ({role})")
         return jsonify(result)
     except Exception as e:
-        print(f"❌ Erreur lecture : {e}")
+        print(f"[ERREUR lecture] {e}")
         return jsonify([]), 500
     finally:
         conn.close()
@@ -389,8 +388,8 @@ def download_certificate_pdf(cert_id):
     try:
         pdf_buffer = generate_certificate_pdf(cert)
     except Exception as e:
-        print(f"❌ Erreur génération PDF ({cert_id}): {e}")
-        return jsonify({'error': 'Erreur interne lors de la génération du PDF'}), 500
+        print(f"[ERREUR PDF] {cert_id}: {e}")
+        return jsonify({'error': 'Erreur interne lors de la generation du PDF'}), 500
 
     log_action('DOWNLOAD_PDF', cert_id, f"PDF → {cert['recipient_name']}")
 
@@ -421,7 +420,7 @@ def send_email_route(cert_id):
         pdf_buffer = generate_certificate_pdf(cert)
         success    = send_certificate_email(cert, pdf_buffer)
     except Exception as e:
-        print(f"❌ Erreur envoi email ({cert_id}): {e}")
+        print(f"[ERREUR EMAIL] {cert_id}: {e}")
         return jsonify({'error': "Erreur interne lors de l'envoi de l'email"}), 500
 
     if success:
